@@ -1,29 +1,59 @@
 package com.trifork.dgws.aspect;
 
 import com.trifork.dgws.annotations.Protected;
+import dk.medcom.dgws._2006._04.dgws_1_0.Header;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.ws.soap.SoapHeader;
+import org.springframework.ws.soap.SoapHeaderElement;
 
-import java.security.AccessControlException;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.util.Iterator;
 
 @Aspect
-public class DgwsProtectionAspect implements ApplicationContextAware {
+public class DgwsProtectionAspect {
+    JAXBContext jc;
+    Unmarshaller um;
 
-    private ApplicationContext applicationContext;
-
-    @Before("@annotation(protectedAnnotation)")
-    public void doAccessCheck(Protected protectedAnnotation) throws Throwable {
-        System.out.println("\n########\n# HIT! #\n########\n");
-        if (!protectedAnnotation.whitelist().equals("TEST")) {
-            throw new AccessControlException("You are not whitelisted");
-        }
-        System.out.println("You are all clear");
+    public DgwsProtectionAspect() throws Exception {
+        jc = JAXBContext.newInstance("dk.medcom.dgws._2006._04.dgws_1_0");
+        um = jc.createUnmarshaller();
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
+    @Around("@annotation(protectedAnnotation)")
+    public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
+        SoapHeader soapHeader = extractSoapHeader(pjp);
+
+        final Header medcomHeader = unmarshalMedcomHeader(soapHeader);
+        //TODO: medcom header replay
+        System.out.println("medcomHeader = " + medcomHeader);
+
+        return pjp.proceed(pjp.getArgs());
+    }
+
+    private Header unmarshalMedcomHeader(SoapHeader soapHeader) throws JAXBException {
+        Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
+        while (it.hasNext()) {
+            SoapHeaderElement e = it.next();
+            return (Header) um.unmarshal(e.getSource());
+        }
+        return null;
+    }
+
+    private SoapHeader extractSoapHeader(ProceedingJoinPoint pjp) {
+        SoapHeader soapHeader = null;
+        for (Object arg : pjp.getArgs()) {
+            if (arg instanceof SoapHeader) {
+                soapHeader = (SoapHeader) arg;
+                break;
+            }
+        }
+        if (soapHeader == null) {
+            throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument");
+        }
+        return soapHeader;
     }
 }
