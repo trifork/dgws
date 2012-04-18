@@ -46,6 +46,6 @@ public class DgwsProtectionAspect {
                 return (SoapHeader) arg;
             }
         }
-        throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument");
+        throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument or it is null");
     }
 }

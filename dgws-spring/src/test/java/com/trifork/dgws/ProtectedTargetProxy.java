@@ -19,6 +19,7 @@ public class ProtectedTargetProxy implements ProtectedTarget {
         return target.hitMe();
     }
 
+    @Protected(whitelist = "TEST")
     public boolean hitMe(SoapHeader header) {
         return target.hitMe(header);
     }

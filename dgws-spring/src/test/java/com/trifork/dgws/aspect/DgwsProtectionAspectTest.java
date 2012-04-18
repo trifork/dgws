@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.oxm.Unmarshaller;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.ws.soap.SoapHeader;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {DgwsProtectionAspectTest.TestContext.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DgwsProtectionAspectTest {
     @Autowired
     ProtectedTarget target;
@@ -62,7 +64,7 @@ public class DgwsProtectionAspectTest {
         try {
             target.hitMe();
         } catch (IllegalArgumentException e) {
-            assertEquals("Endpoint method does not contain a SoapHeader argument", e.getMessage());
+            assertEquals("Endpoint method does not contain a SoapHeader argument or it is null", e.getMessage());
             return;
         }
         fail("method did not throw IllegalArgumentException");
@@ -70,15 +72,30 @@ public class DgwsProtectionAspectTest {
 
     @Test
     public void willForwardCallToTarget() throws Exception {
+        SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
+        Source source = mock(Source.class);
+        Header medcomHeader = new Header();
+
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
+        when(soapHeaderElement.getSource()).thenReturn(source);
+        when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
+
         target.hitMe(soapHeader);
 
-        verify(targetMock).hitMe(soapHeader);
+        verify(soapHeader).examineAllHeaderElements();
+        verify(soapHeaderElement).getSource();
+        verify(unmarshaller).unmarshal(source);
     }
 
     @Test
     public void willNotAllowNullSoapHeader() throws Exception {
-
-        target.hitMe(null);
+        try {
+            target.hitMe(null);
+        } catch (IllegalArgumentException e) {
+            assertEquals("Endpoint method does not contain a SoapHeader argument or it is null", e.getMessage());
+            return;
+        }
+        fail("Method did not throw IllegalArgumentException");
     }
 
     @Test
