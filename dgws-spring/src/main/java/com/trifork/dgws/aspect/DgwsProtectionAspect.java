@@ -30,13 +30,13 @@ public class DgwsProtectionAspect {
         final Header medcomHeader = unmarshalMedcomHeader(soapHeader);
 
         String messageID = medcomHeader.getLinking().getMessageID();
-        logger.debug("Received message with messageID=" + messageID);
+        logger.debug("Received webservice request with messageID=" + messageID);
 
         //TODO: access checking…
 
         MedcomReplay replay = medcomReplayRegister.getReplay(messageID);
         if (replay != null) {
-            logger.info("Replaying message with messageID=" + replay.getMessageId());
+            logger.info("Replaying message with messageID=" + replay.getMessageId() + ", shortcutting webservice request with response=" + replay.getResponseMessage().toString());
             //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
             return replay.getResponseMessage();
         }
