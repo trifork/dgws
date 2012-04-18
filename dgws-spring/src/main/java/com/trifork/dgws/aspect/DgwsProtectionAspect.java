@@ -1,5 +1,7 @@
 package com.trifork.dgws.aspect;
 
+import com.trifork.dgws.MedcomReplay;
+import com.trifork.dgws.MedcomReplayRegister;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -16,16 +18,34 @@ import java.util.Iterator;
 public class DgwsProtectionAspect {
     @Autowired
     Unmarshaller unmarshaller;
+    @Autowired
+    MedcomReplayRegister medcomReplayRegister;
 
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);
 
         final Header medcomHeader = unmarshalMedcomHeader(soapHeader);
-        //TODO: medcom header replay
-        System.out.println("medcomHeader = " + medcomHeader);
+        MedcomReplay replay = medcomReplayRegister.getReplay(medcomHeader.getLinking().getMessageID());
+        if (replay != null) {
+            //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
+            return replay.getResponseMessage();
+        }
 
         return pjp.proceed(pjp.getArgs());
+    }
+
+    private SoapHeader extractSoapHeader(ProceedingJoinPoint pjp) {
+        /* TODO: Some decisions to make...
+            1. Checking method arguments for a SoapHeader argument if no SoapHeader is found in pjp.getArgs() for a more precise error message, or
+            2. Dig into Spring-ws to find the actual SoapHeader
+        */
+        for (Object arg : pjp.getArgs()) {
+            if (arg instanceof SoapHeader) {
+                return (SoapHeader) arg;
+            }
+        }
+        throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument or it is null");
     }
 
     private Header unmarshalMedcomHeader(SoapHeader soapHeader) throws Exception {
@@ -38,14 +58,5 @@ public class DgwsProtectionAspect {
             }
         }
         throw new IllegalStateException("Could not find any Medcom Header header element");
-    }
-
-    private SoapHeader extractSoapHeader(ProceedingJoinPoint pjp) {
-        for (Object arg : pjp.getArgs()) {
-            if (arg instanceof SoapHeader) {
-                return (SoapHeader) arg;
-            }
-        }
-        throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument or it is null");
     }
 }

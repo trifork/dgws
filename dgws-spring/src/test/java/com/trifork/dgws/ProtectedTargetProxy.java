@@ -15,12 +15,12 @@ public class ProtectedTargetProxy implements ProtectedTarget {
     }
 
     @Protected(whitelist = "TEST")
-    public boolean hitMe() {
+    public String hitMe() {
         return target.hitMe();
     }
 
     @Protected(whitelist = "TEST")
-    public boolean hitMe(SoapHeader header) {
+    public String hitMe(SoapHeader header) {
         return target.hitMe(header);
     }
 }

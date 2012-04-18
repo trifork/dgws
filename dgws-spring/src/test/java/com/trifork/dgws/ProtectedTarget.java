@@ -4,9 +4,7 @@ import com.trifork.dgws.annotations.Protected;
 import org.springframework.ws.soap.SoapHeader;
 
 public interface ProtectedTarget {
-    @Protected(whitelist = "TEST")
-    boolean hitMe();
+    String hitMe();
 
-    @Protected(whitelist = "TEST")
-    boolean hitMe(SoapHeader header);
+    String hitMe(SoapHeader header);
 }

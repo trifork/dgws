@@ -1,11 +1,15 @@
 package com.trifork.dgws.aspect;
 
+import com.trifork.dgws.MedcomReplay;
+import com.trifork.dgws.MedcomReplayRegister;
 import com.trifork.dgws.ProtectedTarget;
 import com.trifork.dgws.ProtectedTargetProxy;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
+import dk.medcom.dgws._2006._04.dgws_1_0.Linking;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.oxm.Unmarshaller;
@@ -25,10 +29,11 @@ import static org.mockito.Mockito.*;
 @ContextConfiguration(classes = {DgwsProtectionAspectTest.TestContext.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DgwsProtectionAspectTest {
-    @Autowired
-    ProtectedTarget target;
+    @Autowired @Qualifier("protectedTargetProxy")
+    ProtectedTargetProxy protectedTargetProxy;
 
-    static ProtectedTarget targetMock;
+    @Autowired @Qualifier("protectedTargetMock")
+    ProtectedTarget protectedTargetMock;
 
     @Autowired
     DgwsProtectionAspect aspect;
@@ -36,25 +41,38 @@ public class DgwsProtectionAspectTest {
     @Autowired
     Unmarshaller unmarshaller;
 
+    @Autowired
+    MedcomReplayRegister medcomReplayRegister;
+
     private final SoapHeader soapHeader = mock(SoapHeader.class);
 
     @ImportResource("classpath:dk/trifork/dgws/dgws-protection.xml")
     public static class TestContext {
         @Bean
-        public ProtectedTarget protectedTarget() {
-            targetMock = mock(ProtectedTarget.class);
-            return new ProtectedTargetProxy(targetMock);
+        public ProtectedTargetProxy protectedTargetProxy(ProtectedTarget protectedTargetMock) {
+            return new ProtectedTargetProxy(protectedTargetMock);
+        }
+
+        @Bean
+        public ProtectedTarget protectedTargetMock() {
+            return mock(ProtectedTarget.class);
         }
 
         @Bean
         public Unmarshaller unmarshaller() {
             return mock(Unmarshaller.class);
         }
+
+        @Bean
+        public MedcomReplayRegister medcomReplayRegister() {
+            return mock(MedcomReplayRegister.class);
+        }
     }
 
     @Test
     public void springWorks() throws Exception {
-        assertNotNull(target);
+        assertNotNull(protectedTargetProxy);
+        assertTrue(protectedTargetProxy instanceof ProtectedTargetProxy);
         assertNotNull(aspect);
         assertNotNull(soapHeader);
     }
@@ -62,7 +80,7 @@ public class DgwsProtectionAspectTest {
     @Test
     public void willThrowOnMissingSoapHeader() throws Exception {
         try {
-            target.hitMe();
+            protectedTargetProxy.hitMe();
         } catch (IllegalArgumentException e) {
             assertEquals("Endpoint method does not contain a SoapHeader argument or it is null", e.getMessage());
             return;
@@ -74,23 +92,25 @@ public class DgwsProtectionAspectTest {
     public void willForwardCallToTarget() throws Exception {
         SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
         Source source = mock(Source.class);
-        Header medcomHeader = new Header();
+        Header medcomHeader = createMedcomHeader("TEST");
 
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
         when(soapHeaderElement.getSource()).thenReturn(source);
         when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
+        when(protectedTargetMock.hitMe(soapHeader)).thenReturn("HIT");
 
-        target.hitMe(soapHeader);
+        assertEquals("HIT", protectedTargetProxy.hitMe(soapHeader));
 
         verify(soapHeader).examineAllHeaderElements();
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
+        verify(protectedTargetMock).hitMe(soapHeader);
     }
 
     @Test
     public void willNotAllowNullSoapHeader() throws Exception {
         try {
-            target.hitMe(null);
+            protectedTargetProxy.hitMe(null);
         } catch (IllegalArgumentException e) {
             assertEquals("Endpoint method does not contain a SoapHeader argument or it is null", e.getMessage());
             return;
@@ -102,17 +122,27 @@ public class DgwsProtectionAspectTest {
     public void willNotForwardCallOnReplay() throws Exception {
         SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
         Source source = mock(Source.class);
-        Header medcomHeader = new Header();
+        Header medcomHeader = createMedcomHeader("TEST");
+        String expectedResponse = "Some replayable response";
 
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
         when(soapHeaderElement.getSource()).thenReturn(source);
         when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
+        when(medcomReplayRegister.getReplay("TEST")).thenReturn(new MedcomReplay("TEST", expectedResponse));
 
-        target.hitMe(soapHeader);
+        assertEquals(expectedResponse, protectedTargetProxy.hitMe(soapHeader));
 
         verify(soapHeader).examineAllHeaderElements();
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
+        verify(protectedTargetMock, never()).hitMe(soapHeader);
+    }
 
+    private Header createMedcomHeader(String messageID) {
+        Header medcomHeader = new Header();
+        Linking linking = new Linking();
+        linking.setMessageID(messageID);
+        medcomHeader.setLinking(linking);
+        return medcomHeader;
     }
 }
