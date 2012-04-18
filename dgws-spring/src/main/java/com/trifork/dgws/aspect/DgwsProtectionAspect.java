@@ -4,6 +4,7 @@ import com.trifork.dgws.MedcomReplay;
 import com.trifork.dgws.MedcomReplayRegister;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
+import org.apache.log4j.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -16,6 +17,8 @@ import java.util.Iterator;
 
 @Aspect
 public class DgwsProtectionAspect {
+    private static final Logger logger = Logger.getLogger(DgwsProtectionAspect.class);
+
     @Autowired
     Unmarshaller unmarshaller;
     @Autowired
@@ -24,10 +27,16 @@ public class DgwsProtectionAspect {
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);
-
         final Header medcomHeader = unmarshalMedcomHeader(soapHeader);
-        MedcomReplay replay = medcomReplayRegister.getReplay(medcomHeader.getLinking().getMessageID());
+
+        String messageID = medcomHeader.getLinking().getMessageID();
+        logger.debug("Received message with messageID=" + messageID);
+
+        //TODO: access checking…
+
+        MedcomReplay replay = medcomReplayRegister.getReplay(messageID);
         if (replay != null) {
+            logger.info("Replaying message with messageID=" + replay.getMessageId());
             //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
             return replay.getResponseMessage();
         }
