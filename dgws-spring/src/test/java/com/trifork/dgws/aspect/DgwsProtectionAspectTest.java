@@ -2,20 +2,23 @@ package com.trifork.dgws.aspect;
 
 import com.trifork.dgws.ProtectedTarget;
 import com.trifork.dgws.ProtectedTargetProxy;
+import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.oxm.Unmarshaller;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.ws.soap.SoapHeader;
+import org.springframework.ws.soap.SoapHeaderElement;
 
+import javax.xml.transform.Source;
+
+import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {DgwsProtectionAspectTest.TestContext.class})
@@ -28,6 +31,9 @@ public class DgwsProtectionAspectTest {
     @Autowired
     DgwsProtectionAspect aspect;
 
+    @Autowired
+    Unmarshaller unmarshaller;
+
     private final SoapHeader soapHeader = mock(SoapHeader.class);
 
     @ImportResource("classpath:dk/trifork/dgws/dgws-protection.xml")
@@ -36,6 +42,11 @@ public class DgwsProtectionAspectTest {
         public ProtectedTarget protectedTarget() {
             targetMock = mock(ProtectedTarget.class);
             return new ProtectedTargetProxy(targetMock);
+        }
+
+        @Bean
+        public Unmarshaller unmarshaller() {
+            return mock(Unmarshaller.class);
         }
     }
 
@@ -61,6 +72,30 @@ public class DgwsProtectionAspectTest {
     public void willForwardCallToTarget() throws Exception {
         target.hitMe(soapHeader);
 
-        verify(targetMock, atLeastOnce()).hitMe(soapHeader);
+        verify(targetMock).hitMe(soapHeader);
+    }
+
+    @Test
+    public void willNotAllowNullSoapHeader() throws Exception {
+
+        target.hitMe(null);
+    }
+
+    @Test
+    public void willNotForwardCallOnReplay() throws Exception {
+        SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
+        Source source = mock(Source.class);
+        Header medcomHeader = new Header();
+
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
+        when(soapHeaderElement.getSource()).thenReturn(source);
+        when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
+
+        target.hitMe(soapHeader);
+
+        verify(soapHeader).examineAllHeaderElements();
+        verify(soapHeaderElement).getSource();
+        verify(unmarshaller).unmarshal(source);
+
     }
 }
