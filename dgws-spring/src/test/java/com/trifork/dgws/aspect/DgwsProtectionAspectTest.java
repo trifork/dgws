@@ -89,7 +89,7 @@ public class DgwsProtectionAspectTest {
     }
 
     @Test
-    public void willForwardCallToTarget() throws Exception {
+    public void willForwardCallToTargetAndStoreReplay() throws Exception {
         SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
         Source source = mock(Source.class);
         Header medcomHeader = createMedcomHeader("TEST");
@@ -105,6 +105,7 @@ public class DgwsProtectionAspectTest {
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
         verify(protectedTargetMock).hitMe(soapHeader);
+        verify(medcomReplayRegister).createReplay("TEST", "HIT");
     }
 
     @Test
@@ -136,6 +137,7 @@ public class DgwsProtectionAspectTest {
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
         verify(protectedTargetMock, never()).hitMe(soapHeader);
+        verify(medcomReplayRegister, never()).createReplay("TEST", expectedResponse);
     }
 
     private Header createMedcomHeader(String messageID) {

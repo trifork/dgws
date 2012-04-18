@@ -7,4 +7,6 @@ public interface MedcomReplayRegister {
      * @return MedcomReplay containing a replayable message or null, if no message is found
      */
     MedcomReplay getReplay(String messageId);
+
+    void createReplay(String messageID, Object responseMessage);
 }

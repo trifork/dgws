@@ -41,7 +41,11 @@ public class DgwsProtectionAspect {
             return replay.getResponseMessage();
         }
 
-        return pjp.proceed(pjp.getArgs());
+        Object responseMessage = pjp.proceed(pjp.getArgs());
+
+        medcomReplayRegister.createReplay(messageID, responseMessage);
+
+        return responseMessage;
     }
 
     private SoapHeader extractSoapHeader(ProceedingJoinPoint pjp) {
