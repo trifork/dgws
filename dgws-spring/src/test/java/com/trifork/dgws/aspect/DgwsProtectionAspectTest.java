@@ -1,13 +1,11 @@
 package com.trifork.dgws.aspect;
 
-import com.trifork.dgws.MedcomRetransmission;
-import com.trifork.dgws.MedcomRetransmissionRegister;
-import com.trifork.dgws.ProtectedTarget;
-import com.trifork.dgws.ProtectedTargetProxy;
+import com.trifork.dgws.*;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import dk.medcom.dgws._2006._04.dgws_1_0.Linking;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +42,9 @@ public class DgwsProtectionAspectTest {
     @Autowired
     MedcomRetransmissionRegister medcomRetransmissionRegister;
 
+    @Autowired
+    SecurityChecker securityChecker;
+
     private final SoapHeader soapHeader = mock(SoapHeader.class);
 
     @ImportResource("classpath:dk/trifork/dgws/dgws-protection.xml")
@@ -67,6 +68,11 @@ public class DgwsProtectionAspectTest {
         public MedcomRetransmissionRegister medcomReplayRegister() {
             return mock(MedcomRetransmissionRegister.class);
         }
+
+        @Bean
+        public SecurityChecker securityChecker() {
+            return mock(SecurityChecker.class);
+        }
     }
 
     @Test
@@ -74,6 +80,7 @@ public class DgwsProtectionAspectTest {
         assertNotNull(protectedTargetProxy);
         assertNotNull(aspect);
         assertNotNull(soapHeader);
+        assertNotNull(securityChecker);
     }
 
     @Test
@@ -89,22 +96,25 @@ public class DgwsProtectionAspectTest {
 
     @Test
     public void willForwardCallToTargetAndStoreReplay() throws Exception {
-        SoapHeaderElement soapHeaderElement = mock(SoapHeaderElement.class);
-        Source source = mock(Source.class);
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+        SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
+        Source sourceHeader = mock(Source.class);
+        Source sourceSecurity = mock(Source.class);
         Header medcomHeader = createMedcomHeader("TEST");
+        Security security = new Security();
 
-        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
-        when(soapHeaderElement.getSource()).thenReturn(source);
-        when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
+        when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
+        when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
+        when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
+        when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
         when(protectedTargetMock.hitMe(soapHeader)).thenReturn("HIT");
 
         assertEquals("HIT", protectedTargetProxy.hitMe(soapHeader));
 
-        verify(soapHeader).examineAllHeaderElements();
-        verify(soapHeaderElement).getSource();
-        verify(unmarshaller).unmarshal(source);
-        verify(protectedTargetMock).hitMe(soapHeader);
+        verify(securityChecker).validateHeader(security);
         verify(medcomRetransmissionRegister).createReplay("TEST", "HIT");
+        verify(protectedTargetMock).hitMe(soapHeader);
     }
 
     @Test

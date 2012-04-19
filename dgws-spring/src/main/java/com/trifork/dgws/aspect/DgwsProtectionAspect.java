@@ -2,18 +2,26 @@ package com.trifork.dgws.aspect;
 
 import com.trifork.dgws.MedcomRetransmission;
 import com.trifork.dgws.MedcomRetransmissionRegister;
+import com.trifork.dgws.SecurityChecker;
+import com.trifork.dgws.WhitelistChecker;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.apache.log4j.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import static org.springframework.util.CollectionUtils.findValueOfType;
 
 @Aspect
 public class DgwsProtectionAspect {
@@ -27,15 +35,21 @@ public class DgwsProtectionAspect {
     @Autowired
     MedcomRetransmissionRegister medcomRetransmissionRegister;
 
+    @Autowired
+    SecurityChecker securityChecker;
+
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);
-        final Header medcomHeader = unmarshalMedcomHeader(soapHeader);
 
+        final List list = unmarshalHeaderElements(soapHeader);
+        final Header medcomHeader = findValueOfType(list, Header.class);
+        final Security securityHeader = findValueOfType(list, Security.class);
         String messageID = medcomHeader.getLinking().getMessageID();
         logger.debug("Received webservice request with messageID=" + messageID);
 
         //TODO: access checking…
+        securityChecker.validateHeader(securityHeader);
 
         MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
         if (retransmission != null) {
@@ -64,15 +78,13 @@ public class DgwsProtectionAspect {
         throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument or it is null");
     }
 
-    private Header unmarshalMedcomHeader(SoapHeader soapHeader) throws Exception {
+    private List unmarshalHeaderElements(SoapHeader soapHeader) throws Exception {
+        List result = new ArrayList();
         Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
         while (it.hasNext()) {
             SoapHeaderElement e = it.next();
-            final Object o = unmarshaller.unmarshal(e.getSource());
-            if (o instanceof Header) {
-                return (Header) o;
-            }
+            result.add(unmarshaller.unmarshal(e.getSource()));
         }
-        throw new IllegalStateException("Could not find any Medcom Header header element");
+        return result;
     }
 }
