@@ -3,7 +3,6 @@ package com.trifork.dgws.aspect;
 import com.trifork.dgws.MedcomRetransmission;
 import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.SecurityChecker;
-import com.trifork.dgws.WhitelistChecker;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.apache.log4j.Logger;
@@ -19,7 +18,6 @@ import org.springframework.ws.soap.SoapHeaderElement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import static org.springframework.util.CollectionUtils.findValueOfType;
 
