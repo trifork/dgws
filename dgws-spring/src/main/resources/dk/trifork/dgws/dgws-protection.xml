@@ -6,4 +6,6 @@
     <aop:aspectj-autoproxy proxy-target-class="true"/> <!--TODO: move this to spring java config-->
 
     <bean id="dgwsProtectionAspect" class="com.trifork.dgws.aspect.DgwsProtectionAspect"/>
+
+    <bean id="securityChecker" class="com.trifork.dgws.SecurityCheckerImpl"/>
 </beans>
