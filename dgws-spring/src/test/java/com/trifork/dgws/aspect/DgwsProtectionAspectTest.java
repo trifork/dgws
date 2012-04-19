@@ -1,7 +1,7 @@
 package com.trifork.dgws.aspect;
 
-import com.trifork.dgws.MedcomReplay;
-import com.trifork.dgws.MedcomReplayRegister;
+import com.trifork.dgws.MedcomRetransmission;
+import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.ProtectedTarget;
 import com.trifork.dgws.ProtectedTargetProxy;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
@@ -42,7 +42,7 @@ public class DgwsProtectionAspectTest {
     Unmarshaller unmarshaller;
 
     @Autowired
-    MedcomReplayRegister medcomReplayRegister;
+    MedcomRetransmissionRegister medcomRetransmissionRegister;
 
     private final SoapHeader soapHeader = mock(SoapHeader.class);
 
@@ -64,15 +64,14 @@ public class DgwsProtectionAspectTest {
         }
 
         @Bean
-        public MedcomReplayRegister medcomReplayRegister() {
-            return mock(MedcomReplayRegister.class);
+        public MedcomRetransmissionRegister medcomReplayRegister() {
+            return mock(MedcomRetransmissionRegister.class);
         }
     }
 
     @Test
     public void springWorks() throws Exception {
         assertNotNull(protectedTargetProxy);
-        assertTrue(protectedTargetProxy instanceof ProtectedTargetProxy);
         assertNotNull(aspect);
         assertNotNull(soapHeader);
     }
@@ -105,7 +104,7 @@ public class DgwsProtectionAspectTest {
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
         verify(protectedTargetMock).hitMe(soapHeader);
-        verify(medcomReplayRegister).createReplay("TEST", "HIT");
+        verify(medcomRetransmissionRegister).createReplay("TEST", "HIT");
     }
 
     @Test
@@ -129,7 +128,7 @@ public class DgwsProtectionAspectTest {
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElement).iterator());
         when(soapHeaderElement.getSource()).thenReturn(source);
         when(unmarshaller.unmarshal(source)).thenReturn(medcomHeader);
-        when(medcomReplayRegister.getReplay("TEST")).thenReturn(new MedcomReplay("TEST", expectedResponse));
+        when(medcomRetransmissionRegister.getReplay("TEST")).thenReturn(new MedcomRetransmission("TEST", expectedResponse));
 
         assertEquals(expectedResponse, protectedTargetProxy.hitMe(soapHeader));
 
@@ -137,7 +136,7 @@ public class DgwsProtectionAspectTest {
         verify(soapHeaderElement).getSource();
         verify(unmarshaller).unmarshal(source);
         verify(protectedTargetMock, never()).hitMe(soapHeader);
-        verify(medcomReplayRegister, never()).createReplay("TEST", expectedResponse);
+        verify(medcomRetransmissionRegister, never()).createReplay("TEST", expectedResponse);
     }
 
     private Header createMedcomHeader(String messageID) {

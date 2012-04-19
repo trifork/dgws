@@ -1,7 +1,7 @@
 package com.trifork.dgws.aspect;
 
-import com.trifork.dgws.MedcomReplay;
-import com.trifork.dgws.MedcomReplayRegister;
+import com.trifork.dgws.MedcomRetransmission;
+import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.apache.log4j.Logger;
@@ -19,10 +19,13 @@ import java.util.Iterator;
 public class DgwsProtectionAspect {
     private static final Logger logger = Logger.getLogger(DgwsProtectionAspect.class);
 
+    @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
     @Autowired
     Unmarshaller unmarshaller;
+
+    @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
     @Autowired
-    MedcomReplayRegister medcomReplayRegister;
+    MedcomRetransmissionRegister medcomRetransmissionRegister;
 
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
@@ -34,16 +37,16 @@ public class DgwsProtectionAspect {
 
         //TODO: access checking…
 
-        MedcomReplay replay = medcomReplayRegister.getReplay(messageID);
-        if (replay != null) {
-            logger.info("Replaying message with messageID=" + replay.getMessageId() + ", shortcutting webservice request with response=" + replay.getResponseMessage().toString());
+        MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
+        if (retransmission != null) {
+            logger.info("Replaying message with messageID=" + retransmission.getMessageId() + ", shortcutting webservice request with response=" + retransmission.getResponseMessage().toString());
             //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
-            return replay.getResponseMessage();
+            return retransmission.getResponseMessage();
         }
 
         Object responseMessage = pjp.proceed(pjp.getArgs());
 
-        medcomReplayRegister.createReplay(messageID, responseMessage);
+        medcomRetransmissionRegister.createReplay(messageID, responseMessage);
 
         return responseMessage;
     }

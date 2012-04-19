@@ -1,10 +1,10 @@
 package com.trifork.dgws;
 
-public class MedcomReplay {
+public class MedcomRetransmission {
     private final String messageId;
     private final Object responseMessage;
 
-    public MedcomReplay(String messageId, Object responseMessage) {
+    public MedcomRetransmission(String messageId, Object responseMessage) {
         this.messageId = messageId;
         this.responseMessage = responseMessage;
     }
