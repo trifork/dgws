@@ -3,6 +3,7 @@ package com.trifork.dgws.aspect;
 import com.trifork.dgws.MedcomRetransmission;
 import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.SecurityChecker;
+import com.trifork.dgws.WhitelistChecker;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.apache.log4j.Logger;
@@ -35,6 +36,10 @@ public class DgwsProtectionAspect {
 
     @Autowired
     SecurityChecker securityChecker;
+
+    @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
+    @Autowired
+    WhitelistChecker whitelistChecker;
 
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
