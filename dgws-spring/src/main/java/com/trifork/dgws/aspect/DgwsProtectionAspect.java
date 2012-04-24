@@ -37,10 +37,6 @@ public class DgwsProtectionAspect {
     @Autowired
     SecurityChecker securityChecker;
 
-    @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
-    @Autowired
-    WhitelistChecker whitelistChecker;
-
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);

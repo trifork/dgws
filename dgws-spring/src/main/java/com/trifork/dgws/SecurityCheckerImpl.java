@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class SecurityCheckerImpl implements SecurityChecker {
     @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
-    @Autowired
+    //@Autowired
     WhitelistChecker whitelistChecker;
 
 
