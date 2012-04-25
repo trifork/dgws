@@ -42,6 +42,7 @@ public class DgwsProtectionAspectTest {
     @Autowired
     MedcomRetransmissionRegister medcomRetransmissionRegister;
 
+    @SuppressWarnings("SpringJavaAutowiringInspection Supplied by user")
     @Autowired
     SecurityChecker securityChecker;
 
@@ -112,7 +113,7 @@ public class DgwsProtectionAspectTest {
 
         assertEquals("HIT", protectedTargetProxy.hitMe(soapHeader));
 
-        verify(securityChecker).validateHeader(security);
+        verify(securityChecker).validateHeader(null, security);
         verify(medcomRetransmissionRegister).createReplay("TEST", "HIT");
         verify(protectedTargetMock).hitMe(soapHeader);
     }

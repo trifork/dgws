@@ -3,7 +3,6 @@ package com.trifork.dgws.aspect;
 import com.trifork.dgws.MedcomRetransmission;
 import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.SecurityChecker;
-import com.trifork.dgws.WhitelistChecker;
 import com.trifork.dgws.annotations.Protected;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import org.apache.log4j.Logger;
@@ -48,7 +47,7 @@ public class DgwsProtectionAspect {
         logger.debug("Received webservice request with messageID=" + messageID);
 
         //TODO: access checking…
-        securityChecker.validateHeader(securityHeader);
+        securityChecker.validateHeader(null, securityHeader);
 
         MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
         if (retransmission != null) {
