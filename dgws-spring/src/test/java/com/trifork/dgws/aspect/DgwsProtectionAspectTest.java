@@ -9,7 +9,7 @@ import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -48,8 +48,13 @@ public class DgwsProtectionAspectTest {
 
     private final SoapHeader soapHeader = mock(SoapHeader.class);
 
-    @ImportResource("classpath:dk/trifork/dgws/dgws-protection.xml")
+    @EnableAspectJAutoProxy(proxyTargetClass = true)
     public static class TestContext {
+        @Bean
+        public DgwsProtectionAspect dgwsProtectionAspect() {
+            return new DgwsProtectionAspect();
+        }
+
         @Bean
         public ProtectedTargetProxy protectedTargetProxy(ProtectedTarget protectedTargetMock) {
             return new ProtectedTargetProxy(protectedTargetMock);
@@ -74,6 +79,7 @@ public class DgwsProtectionAspectTest {
         public SecurityChecker securityChecker() {
             return mock(SecurityChecker.class);
         }
+
     }
 
     @Test
@@ -113,7 +119,7 @@ public class DgwsProtectionAspectTest {
 
         assertEquals("HIT", protectedTargetProxy.hitMe(soapHeader));
 
-        verify(securityChecker).validateHeader(null, security);
+        verify(securityChecker).validateHeader("Test Whitelist", security);
         verify(medcomRetransmissionRegister).createReplay("TEST", "HIT");
         verify(protectedTargetMock).hitMe(soapHeader);
     }

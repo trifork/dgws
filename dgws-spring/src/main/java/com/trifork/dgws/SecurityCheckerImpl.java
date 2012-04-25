@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.trifork.dgws.util.*;
+import org.springframework.util.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
@@ -19,8 +20,10 @@ public class SecurityCheckerImpl implements SecurityChecker {
 
     public void validateHeader(String whitelist, Security securityHeader) {
         //TODO: validering af signature
+        Assert.hasText(whitelist);
 
         final String cvrNumber = findCvrNumber(securityHeader);
+        logger.debug("Extracted CVR=" + cvrNumber + " from Certificate");
         if (!(whitelistChecker.getLegalCvrNumbers(whitelist).contains(cvrNumber))) {
             throw new IllegalAccessError("cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
         }

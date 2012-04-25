@@ -6,20 +6,19 @@ import org.springframework.ws.soap.SoapHeader;
 public class ProtectedTargetProxy implements ProtectedTarget {
     private ProtectedTarget target;
 
-    public ProtectedTargetProxy() {
-        //aop
-    }
+    @SuppressWarnings("UnusedDeclaration AOP")
+    public ProtectedTargetProxy() { }
 
     public ProtectedTargetProxy(ProtectedTarget target) {
         this.target = target;
     }
 
-    @Protected(whitelist = "TEST")
+    @Protected(whitelist = "Test Whitelist")
     public String hitMe() {
         return target.hitMe();
     }
 
-    @Protected(whitelist = "TEST")
+    @Protected(whitelist = "Test Whitelist")
     public String hitMe(SoapHeader header) {
         return target.hitMe(header);
     }
