@@ -7,13 +7,7 @@ import org.apache.commons.collections.Predicate;
 import org.apache.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.trifork.dgws.util.*;
 import org.springframework.util.Assert;
-
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 
 public class SecurityCheckerImpl implements SecurityChecker {
     private static Logger logger = Logger.getLogger(SecurityCheckerImpl.class);
