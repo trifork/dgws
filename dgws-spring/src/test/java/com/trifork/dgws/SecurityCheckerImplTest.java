@@ -27,19 +27,25 @@ public class SecurityCheckerImplTest {
         marshaller.afterPropertiesSet();
     }
 
-
     @Test
-    public void canValidateCvrFromCertificate() throws Exception {
+    public void canValidateCvrFromCarProviderID() throws Exception {
         StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader1.xml"));
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
-        assertNotNull(securityHeader.getAssertion());
-        assertNotNull(securityHeader.getAssertion().getSignature());
 
-        when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("55832218"));
+        when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("25520041"));
 
         securityChecker.validateHeader("TestWhiteList", securityHeader);
     }
 
+    @Test(expected = IllegalAccessError.class)
+    public void willThrowAccessViolationOnIllegalCvr() throws Exception {
+        StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader1.xml"));
+        final Security securityHeader = (Security) marshaller.unmarshal(source);
+        assertNotNull(securityHeader);
 
+        when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("0"));
+
+        securityChecker.validateHeader("TestWhiteList", securityHeader);
+    }
 }
