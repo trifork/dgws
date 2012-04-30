@@ -6,4 +6,6 @@
     <bean id="dgwsProtectionAspect" class="com.trifork.dgws.aspect.DgwsProtectionAspect"/>
 
     <bean id="securityChecker" class="com.trifork.dgws.SecurityCheckerImpl"/>
+
+    <bean id="securityHelper" class="com.trifork.dgws.util.SecurityHelperImpl"/>
 </beans>
