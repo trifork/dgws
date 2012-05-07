@@ -23,6 +23,7 @@ public class SecurityCheckerImpl implements SecurityChecker {
         final String cvrNumber = findCvrNumber(securityHeader);
         logger.debug("Extracted CVR=" + cvrNumber + " from saml:assertion");
         if (!(whitelistChecker.getLegalCvrNumbers(whitelist).contains(cvrNumber))) {
+            logger.warn("whitelist check failed. cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
             throw new IllegalAccessError("cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
         }
     }
