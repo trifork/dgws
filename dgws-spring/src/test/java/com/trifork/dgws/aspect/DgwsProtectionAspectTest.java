@@ -125,6 +125,28 @@ public class DgwsProtectionAspectTest {
     }
 
     @Test
+    public void willForwardWithoutWhitelist() throws Exception {
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+        SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
+        Source sourceHeader = mock(Source.class);
+        Source sourceSecurity = mock(Source.class);
+        Header medcomHeader = createMedcomHeader("TEST");
+        Security security = new Security();
+
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
+        when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
+        when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
+        when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
+        when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
+        when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
+
+        assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
+
+        verify(securityChecker).validateHeader("", security);
+        verify(protectedTargetMock).publicHitMe(soapHeader);
+    }
+
+    @Test
     public void willNotAllowNullSoapHeader() throws Exception {
         try {
             protectedTargetProxy.hitMe(null);

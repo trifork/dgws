@@ -22,4 +22,9 @@ public class ProtectedTargetProxy implements ProtectedTarget {
     public String hitMe(SoapHeader header) {
         return target.hitMe(header);
     }
+
+    @Protected
+    public String publicHitMe(SoapHeader soapHeader) {
+        return target.publicHitMe(soapHeader);
+    }
 }

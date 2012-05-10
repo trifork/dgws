@@ -41,7 +41,7 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
-        securityChecker.validateHeader(null, securityHeader);
+        securityChecker.validateHeader("", securityHeader);
 
         verify(whitelistChecker, never()).getLegalCvrNumbers(any(String.class));
     }
