@@ -2,6 +2,10 @@ package com.trifork.dgws;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.w3._2000._09.xmldsig.Signature;
@@ -12,9 +16,14 @@ import static java.util.Collections.singleton;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class SecurityCheckerImplTest {
+    @InjectMocks
     SecurityCheckerImpl securityChecker = new SecurityCheckerImpl();
-    private final WhitelistChecker whitelistChecker = mock(WhitelistChecker.class);
+
+    @Mock
+    WhitelistChecker whitelistChecker;
+
     Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
 
     @Before
