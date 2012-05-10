@@ -9,22 +9,28 @@ import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
+
 public class SecurityCheckerImpl implements SecurityChecker {
     private static Logger logger = Logger.getLogger(SecurityCheckerImpl.class);
-    @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
-    @Autowired
+
+    @Autowired(required = false)
     WhitelistChecker whitelistChecker;
 
 
     public void validateHeader(String whitelist, Security securityHeader) {
         //TODO: validering af signature
-        Assert.hasText(whitelist);
 
-        final String cvrNumber = findCvrNumber(securityHeader);
-        logger.debug("Extracted CVR=" + cvrNumber + " from saml:assertion");
-        if (!(whitelistChecker.getLegalCvrNumbers(whitelist).contains(cvrNumber))) {
-            logger.warn("whitelist check failed. cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
-            throw new IllegalAccessError("cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
+        if (isNotEmpty(whitelist)) {
+            final String cvrNumber = findCvrNumber(securityHeader);
+            logger.debug("Extracted CVR=" + cvrNumber + " from saml:assertion");
+            if (!(whitelistChecker.getLegalCvrNumbers(whitelist).contains(cvrNumber))) {
+                logger.warn("whitelist check failed. cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
+                throw new IllegalAccessError("cvrNumber=" + cvrNumber + " was not found in whitelist=" + whitelist);
+            }
+        }
+        else {
+            logger.debug("No whitelist checking");
         }
     }
 

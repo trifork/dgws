@@ -28,12 +28,22 @@ public class SecurityCheckerImplTest {
 
     @Before
     public void setUp() throws Exception {
-        securityChecker.whitelistChecker = whitelistChecker;
         marshaller.setClassesToBeBound(
                 Security.class,
                 Signature.class
         );
         marshaller.afterPropertiesSet();
+    }
+
+    @Test
+    public void willNotWhitelistCheckIfCheckerIfProvided() throws Exception {
+        StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader1.xml"));
+        final Security securityHeader = (Security) marshaller.unmarshal(source);
+        assertNotNull(securityHeader);
+
+        securityChecker.validateHeader(null, securityHeader);
+
+        verify(whitelistChecker, never()).getLegalCvrNumbers(any(String.class));
     }
 
     @Test
