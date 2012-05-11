@@ -20,8 +20,8 @@
             <url>https://nexus.trifork.com/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>trifork.releases</id>
-            <url>https://nexus.trifork.com/content/repositories/releases</url>
+            <id>trifork.public</id>
+            <url>https://nexus.trifork.com/content/groups/public/</url>
         </repository>
     </distributionManagement>
 
