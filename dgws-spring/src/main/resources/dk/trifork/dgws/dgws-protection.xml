@@ -8,4 +8,6 @@
     <bean id="securityChecker" class="com.trifork.dgws.SecurityCheckerImpl"/>
 
     <bean id="securityHelper" class="com.trifork.dgws.util.SecurityHelperImpl"/>
+
+    <bean id="dgwsRequestContext" class="com.trifork.dgws.DgwsRequestContextDefault"/>
 </beans>
