@@ -12,6 +12,13 @@
     </modules>
     <packaging>pom</packaging>
 
+    <repositories>
+        <repository>
+            <id>trifork.public</id>
+            <url>https://nexus.trifork.com/content/groups/public/</url>
+        </repository>
+    </repositories>
+
     <name>dgws</name>
 
     <distributionManagement>
