@@ -2,8 +2,8 @@ package com.trifork.dgws;
 
 import oasis.names.tc.saml._2_0.assertion.Attribute;
 import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections15.CollectionUtils;
+import org.apache.commons.collections15.Predicate;
 import org.apache.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,15 +35,15 @@ public class SecurityCheckerImpl implements SecurityChecker {
     }
 
     private String findCvrNumber(Security securityHeader) {
-        final AttributeStatement systemLog = (AttributeStatement) CollectionUtils.find(securityHeader.getAssertion().getAttributeStatement(), new Predicate() {
-            public boolean evaluate(Object object) {
-                return ((AttributeStatement) object).getId().equals("SystemLog");
+        final AttributeStatement systemLog = CollectionUtils.find(securityHeader.getAssertion().getAttributeStatement(), new Predicate<AttributeStatement>() {
+            public boolean evaluate(AttributeStatement attributeStatement) {
+                return attributeStatement.getId().equals("SystemLog");
             }
         });
         Assert.notNull(systemLog, "No SystemLog AttributeStatement was found in saml:assertion");
-        final Attribute careProviderId = (Attribute) CollectionUtils.find(systemLog.getAttribute(), new Predicate() {
-            public boolean evaluate(Object object) {
-                return ((Attribute) object).getName().equals("medcom:CareProviderID");
+        final Attribute careProviderId = CollectionUtils.find(systemLog.getAttribute(), new Predicate<Attribute>() {
+            public boolean evaluate(Attribute attribute) {
+                return attribute.getName().equals("medcom:CareProviderID");
             }
         });
         Assert.notNull(careProviderId, "No CareProviderID Attribute was found in SystemLog");
