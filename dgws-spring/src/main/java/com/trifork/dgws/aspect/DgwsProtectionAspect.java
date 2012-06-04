@@ -45,9 +45,8 @@ public class DgwsProtectionAspect {
         final Security securityHeader = findValueOfType(list, Security.class);
         String messageID = medcomHeader.getLinking().getMessageID();
         logger.debug("Received webservice request with messageID=" + messageID);
-
         //TODO: access checking…
-        securityChecker.validateHeader(protectedAnnotation.whitelist(), securityHeader);
+        securityChecker.validateHeader(protectedAnnotation.whitelist(), protectedAnnotation.minAuthLevel(), securityHeader);
 
         MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
         if (retransmission != null) {

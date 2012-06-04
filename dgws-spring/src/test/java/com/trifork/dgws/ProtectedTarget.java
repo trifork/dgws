@@ -8,4 +8,6 @@ public interface ProtectedTarget {
     String hitMe(SoapHeader header);
 
     String publicHitMe(SoapHeader soapHeader);
+    
+    String hitMeAuth(SoapHeader soapHeader);
 }

@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface Protected {
     String whitelist() default "";
+    int minAuthLevel() default 3;
 }
