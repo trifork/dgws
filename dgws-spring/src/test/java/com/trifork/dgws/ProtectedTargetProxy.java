@@ -31,6 +31,6 @@ public class ProtectedTargetProxy implements ProtectedTarget {
     
     @Protected(minAuthLevel=2)
     public String hitMeAuth(SoapHeader soapHeader) {
-    	return target.hitMe(soapHeader);
+    	return target.hitMeAuth(soapHeader);
     }
 }

@@ -168,16 +168,15 @@ public class DgwsProtectionAspectTest {
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
         when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
         when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
-        
         when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
         when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
-        when(protectedTargetMock.hitMe(soapHeader)).thenReturn("HIT");
+        when(protectedTargetMock.hitMeAuth(soapHeader)).thenReturn("HIT");
         
-        protectedTargetProxy.hitMeAuth(soapHeader);
+        assertEquals("HIT", protectedTargetProxy.hitMeAuth(soapHeader));
         
-        verify(protectedTargetMock).hitMe(soapHeader);
         verify(securityChecker).validateHeader("", 2, security);
+        verify(protectedTargetMock).hitMeAuth(soapHeader);
     }
     
     @Test
@@ -196,12 +195,12 @@ public class DgwsProtectionAspectTest {
         when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
         when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
-        when(protectedTargetMock.hitMe(soapHeader)).thenReturn("HIT");
+        when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
         
-        protectedTargetProxy.publicHitMe(soapHeader);
+        assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
         
-        verify(protectedTargetMock).publicHitMe(soapHeader);
         verify(securityChecker).validateHeader("", 3, security);
+        verify(protectedTargetMock).publicHitMe(soapHeader);
     }
     
     
