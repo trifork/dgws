@@ -1,7 +1,8 @@
 package com.trifork.dgws;
 
-import com.trifork.dgws.annotations.Protected;
 import org.springframework.ws.soap.SoapHeader;
+
+import com.trifork.dgws.annotations.Protected;
 
 public class ProtectedTargetProxy implements ProtectedTarget {
     private ProtectedTarget target;
@@ -26,5 +27,10 @@ public class ProtectedTargetProxy implements ProtectedTarget {
     @Protected
     public String publicHitMe(SoapHeader soapHeader) {
         return target.publicHitMe(soapHeader);
+    }
+    
+    @Protected(minAuthLevel=2)
+    public String hitMeAuth(SoapHeader soapHeader) {
+    	return target.hitMeAuth(soapHeader);
     }
 }
