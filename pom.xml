@@ -4,13 +4,20 @@
 
     <groupId>com.trifork.dgws</groupId>
     <artifactId>dgws</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <modules>
         <module>dgws-spring</module>
         <module>sample</module>
         <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
+
+    <repositories>
+        <repository>
+            <id>trifork.public</id>
+            <url>https://nexus.trifork.com/content/groups/public/</url>
+        </repository>
+    </repositories>
 
     <name>dgws</name>
 
@@ -20,8 +27,8 @@
             <url>https://nexus.trifork.com/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>trifork.releases</id>
-            <url>https://nexus.trifork.com/content/repositories/releases</url>
+            <id>trifork.public</id>
+            <url>https://nexus.trifork.com/content/groups/public/</url>
         </repository>
     </distributionManagement>
 

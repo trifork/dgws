@@ -2,8 +2,8 @@ package com.trifork.dgws.util;
 
 import oasis.names.tc.saml._2_0.assertion.Attribute;
 import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections15.CollectionUtils;
+import org.apache.commons.collections15.Predicate;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.Unmarshaller;
@@ -29,18 +29,18 @@ public class SecurityHelperImpl implements SecurityHelper {
     public String getAttributeValue(SoapHeader soapHeader, final String attributeStatementId, final String attributeName) {
         Security security = extractSecurity(soapHeader);
 
-        AttributeStatement attributeStatement = (AttributeStatement) CollectionUtils.find(
+        AttributeStatement attributeStatement = CollectionUtils.find(
                 security.getAssertion().getAttributeStatement(),
-                new Predicate() {
-                    public boolean evaluate(Object object) {
-                        return ((AttributeStatement) object).getId().equals(attributeStatementId);
+                new Predicate<AttributeStatement>() {
+                    public boolean evaluate(AttributeStatement element) {
+                        return element.getId().equals(attributeStatementId);
                     }
                 });
-        Attribute attribute = (Attribute) CollectionUtils.find(
+        Attribute attribute = CollectionUtils.find(
                 attributeStatement.getAttribute(),
-                new Predicate() {
-                    public boolean evaluate(Object object) {
-                        return ((Attribute) object).getName().equals(attributeName);
+                new Predicate<Attribute>() {
+                    public boolean evaluate(Attribute object) {
+                        return object.getName().equals(attributeName);
                     }
                 });
 

@@ -41,7 +41,7 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
-        securityChecker.validateHeader("", securityHeader);
+        securityChecker.validateHeader("", 0, securityHeader);
 
         verify(whitelistChecker, never()).getLegalCvrNumbers(any(String.class));
     }
@@ -54,7 +54,7 @@ public class SecurityCheckerImplTest {
 
         when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("25520041"));
 
-        securityChecker.validateHeader("TestWhiteList", securityHeader);
+        securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
     }
 
     @Test(expected = IllegalAccessError.class)
@@ -65,6 +65,15 @@ public class SecurityCheckerImplTest {
 
         when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("0"));
 
-        securityChecker.validateHeader("TestWhiteList", securityHeader);
+        securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
+    }
+    
+    @Test(expected = IllegalAccessError.class)
+    public void willThrowAccessViolationOnWrongMinLevel() throws Exception {
+        StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader2.xml"));
+        final Security securityHeader = (Security) marshaller.unmarshal(source);
+        assertNotNull(securityHeader);
+ 
+        securityChecker.validateHeader("", 3, securityHeader);
     }
 }
