@@ -34,7 +34,7 @@ public class DgwsProtectionAspect {
     Unmarshaller unmarshaller;
 
     @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
-    @Autowired
+    @Autowired(required=false)
     MedcomRetransmissionRegister medcomRetransmissionRegister;
 
     @Autowired
@@ -57,11 +57,13 @@ public class DgwsProtectionAspect {
         //TODO: access checking…
         securityChecker.validateHeader(protectedAnnotation.whitelist(), protectedAnnotation.minAuthLevel(), securityHeader);
 
-        MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
-        if (retransmission != null) {
-            logger.info("Replaying message with messageID=" + retransmission.getMessageId() + ", shortcutting webservice request with response=" + retransmission.getResponseMessage().toString());
-            //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
-            return retransmission.getResponseMessage();
+        if(medcomRetransmissionRegister != null){
+			MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
+			if (retransmission != null) {
+				logger.info("Replaying message with messageID=" + retransmission.getMessageId() + ", shortcutting webservice request with response=" + retransmission.getResponseMessage().toString());
+				// TODO: check that pjp.proceed(pjp.getArgs()) has same return type
+				return retransmission.getResponseMessage();
+			}
         }
 
         Object responseMessage = pjp.proceed(pjp.getArgs());
