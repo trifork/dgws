@@ -97,8 +97,8 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			UserIDCard card = (UserIDCard) idc;
 			logger.debug("Received SOSI request: " + requestHeader.getMessageID());
 			
-			if (card.getAuthenticationLevel() == null || card.getAuthenticationLevel().getLevel() < 4) {
-				throw new SOSIException(security_level_failed, "Authentication level 4 is required. Current level: " + card.getAuthenticationLevel());
+			if (card.getAuthenticationLevel() == null || card.getAuthenticationLevel().getLevel() < 3) {
+				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + card.getAuthenticationLevel());
 			}
 			logger.debug("SOSI idcard: Level " + card.getAuthenticationLevel().getLevel() + ", System: " + card.getSystemInfo().getITSystemName() + ", User: " + card.getSignedByCertificate().getSubjectDN());
 	
@@ -209,8 +209,6 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 				logger.warn("Got exception while processing SOSI response: " + e + ", continuing because CanSkipSosi=true and isProduction=false");
 				return true;
 			}
-			
-			throw new SOSIException(server_error, e);
 		}
 
 		return true;
