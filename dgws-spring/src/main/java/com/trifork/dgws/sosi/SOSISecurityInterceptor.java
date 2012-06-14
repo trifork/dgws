@@ -68,7 +68,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 				SOSIFederation federation = new SOSIFederation(props);
 				factory = new SOSIFactory(federation, new EmptyCredentialVault(), props);
 			} else {
-				CredentialVault cv = new ClasspathCredentialVault(props, "/sts.keystore", "Test1234");
+				CredentialVault cv = new ClasspathCredentialVault(props, "sts.keystore", "Test1234");
 				SOSITestFederation federation = new SOSITestFederation(props);
 				factory = new SOSIFactory(federation, cv, props);
 			}

@@ -68,7 +68,9 @@ public class DgwsProtectionAspect {
 
         Object responseMessage = pjp.proceed(pjp.getArgs());
 
-        medcomRetransmissionRegister.createReplay(messageID, responseMessage);
+        if(medcomRetransmissionRegister != null) {
+        	medcomRetransmissionRegister.createReplay(messageID, responseMessage);
+        }
 
         return responseMessage;
     }
