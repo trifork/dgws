@@ -78,7 +78,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	
 	public boolean handleRequest(MessageContext ctx, Object arg1) throws Exception {
 		SOSIContext.setCard(null);
-		
+
 		String headerStr = sourceToString(getSource(ctx.getRequest()));
 		try {
 			RequestHeader requestHeader = getFactory().deserializeRequestHeader(headerStr);
