@@ -6,10 +6,6 @@ import static org.mockito.Mockito.*;
 
 import javax.xml.transform.Source;
 
-import oasis.names.tc.saml._2_0.assertion.AssertionType;
-import oasis.names.tc.saml._2_0.assertion.Attribute;
-import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
@@ -257,7 +253,33 @@ public class DgwsProtectionAspectTest {
         
         verify(protectedTargetMock).publicHitMe(soapHeader);    	
     }
-    
+
+    @Test
+    public void willWorkWithoutRetransmission() throws Exception {
+        aspect.medcomRetransmissionRegister = null;
+
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+        SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
+        Source sourceHeader = mock(Source.class);
+        Source sourceSecurity = mock(Source.class);
+        Header medcomHeader = createMedcomHeader("TEST");
+        Security security = new Security();
+
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
+        when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
+        when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
+
+        when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
+        when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
+
+        when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
+
+        assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
+
+        verify(protectedTargetMock).publicHitMe(soapHeader);
+        verifyZeroInteractions(medcomRetransmissionRegister);
+    }
+
     private Header createMedcomHeader(String messageID) {
         Header medcomHeader = new Header();
         Linking linking = new Linking();
