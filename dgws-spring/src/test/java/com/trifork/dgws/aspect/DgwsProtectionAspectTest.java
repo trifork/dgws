@@ -29,6 +29,7 @@ import com.trifork.dgws.MedcomRetransmissionRegister;
 import com.trifork.dgws.ProtectedTarget;
 import com.trifork.dgws.ProtectedTargetProxy;
 import com.trifork.dgws.SecurityChecker;
+import com.trifork.dgws.sosi.SOSIException;
 
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import dk.medcom.dgws._2006._04.dgws_1_0.Linking;
@@ -235,7 +236,28 @@ public class DgwsProtectionAspectTest {
         verify(protectedTargetMock, never()).hitMe(soapHeader);
         verify(medcomRetransmissionRegister, never()).createReplay("TEST", expectedResponse);
     }
+    
+    @Test(expected=SOSIException.class)
+    public void willThrowExceptionOnInvalidMedcom() throws Exception{
+    	SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+        SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
+        Source sourceHeader = mock(Source.class);
+        Source sourceSecurity = mock(Source.class);
+        Security security = new Security();
+        
+        when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
+        when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
+        when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
+        
+        when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
+        when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
+        
+        assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
+        
+        verify(protectedTargetMock).publicHitMe(soapHeader);    	
+    }
+    
     private Header createMedcomHeader(String messageID) {
         Header medcomHeader = new Header();
         Linking linking = new Linking();

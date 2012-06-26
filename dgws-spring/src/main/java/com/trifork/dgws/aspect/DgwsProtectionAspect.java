@@ -1,10 +1,11 @@
 package com.trifork.dgws.aspect;
 
-import com.trifork.dgws.MedcomRetransmission;
-import com.trifork.dgws.MedcomRetransmissionRegister;
-import com.trifork.dgws.SecurityChecker;
-import com.trifork.dgws.annotations.Protected;
-import dk.medcom.dgws._2006._04.dgws_1_0.Header;
+import static org.springframework.util.CollectionUtils.findValueOfType;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -15,11 +16,14 @@ import org.springframework.oxm.Unmarshaller;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import com.trifork.dgws.MedcomRetransmission;
+import com.trifork.dgws.MedcomRetransmissionRegister;
+import com.trifork.dgws.SecurityChecker;
+import com.trifork.dgws.annotations.Protected;
+import com.trifork.dgws.sosi.SOSIException;
+import com.trifork.dgws.sosi.SOSIFaultCode;
 
-import static org.springframework.util.CollectionUtils.findValueOfType;
+import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 
 @Aspect
 public class DgwsProtectionAspect {
@@ -30,7 +34,7 @@ public class DgwsProtectionAspect {
     Unmarshaller unmarshaller;
 
     @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
-    @Autowired
+    @Autowired(required=false)
     MedcomRetransmissionRegister medcomRetransmissionRegister;
 
     @Autowired
@@ -43,21 +47,30 @@ public class DgwsProtectionAspect {
         final List list = unmarshalHeaderElements(soapHeader);
         final Header medcomHeader = findValueOfType(list, Header.class);
         final Security securityHeader = findValueOfType(list, Security.class);
+        
+        if(medcomHeader == null || medcomHeader.getLinking() == null || medcomHeader.getLinking().getMessageID() == null){
+        	throw new SOSIException(SOSIFaultCode.missing_required_header, "medcom header is missing or invalid");
+        }
+        
         String messageID = medcomHeader.getLinking().getMessageID();
         logger.debug("Received webservice request with messageID=" + messageID);
         //TODO: access checking…
         securityChecker.validateHeader(protectedAnnotation.whitelist(), protectedAnnotation.minAuthLevel(), securityHeader);
 
-        MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
-        if (retransmission != null) {
-            logger.info("Replaying message with messageID=" + retransmission.getMessageId() + ", shortcutting webservice request with response=" + retransmission.getResponseMessage().toString());
-            //TODO: check that pjp.proceed(pjp.getArgs()) has same return type
-            return retransmission.getResponseMessage();
+        if(medcomRetransmissionRegister != null){
+			MedcomRetransmission retransmission = medcomRetransmissionRegister.getReplay(messageID);
+			if (retransmission != null) {
+				logger.info("Replaying message with messageID=" + retransmission.getMessageId() + ", shortcutting webservice request with response=" + retransmission.getResponseMessage().toString());
+				// TODO: check that pjp.proceed(pjp.getArgs()) has same return type
+				return retransmission.getResponseMessage();
+			}
         }
 
         Object responseMessage = pjp.proceed(pjp.getArgs());
 
-        medcomRetransmissionRegister.createReplay(messageID, responseMessage);
+        if(medcomRetransmissionRegister != null) {
+        	medcomRetransmissionRegister.createReplay(messageID, responseMessage);
+        }
 
         return responseMessage;
     }
