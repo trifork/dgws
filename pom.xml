@@ -34,7 +34,7 @@
             <url>https://nexus.trifork.com/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>trifork.public</id>
+            <id>trifork.releases</id>
             <url>https://nexus.trifork.com/content/groups/releases/</url>
         </repository>
     </distributionManagement>
