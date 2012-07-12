@@ -12,6 +12,13 @@
     </modules>
     <packaging>pom</packaging>
 
+  <scm>
+    <connection>scm:git:git@github.com:trifork/dgws.git</connection>
+    <url>scm:git:git@github.com:trifork/dgws.git</url>
+    <developerConnection>scm:git:git@github.com:trifork/dgws.git</developerConnection>
+  </scm>
+
+
     <repositories>
         <repository>
             <id>trifork.public</id>
