@@ -20,7 +20,7 @@
 
     <repositories>
         <repository>
-            <id>trifork.public</id>
+            <id>Trifork-Nexus-Public-Repository</id>
             <url>https://nexus.trifork.com/content/groups/public/</url>
         </repository>
     </repositories>
@@ -29,12 +29,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>trifork.snapshots</id>
+            <id>Trifork-Nexus-Snapshot-Repository</id>
             <url>https://nexus.trifork.com/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>trifork.releases</id>
-            <url>https://nexus.trifork.com/content/groups/releases/</url>
+            <id>Trifork-Nexus-Release-Repository</id>
+            <url>https://nexus.trifork.com/content/repositories/releases/</url>
         </repository>
     </distributionManagement>
 
