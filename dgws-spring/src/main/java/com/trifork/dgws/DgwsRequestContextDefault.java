@@ -66,8 +66,12 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
         List result = new ArrayList();
         final Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
         while (it.hasNext()) {
-            SoapHeaderElement e = it.next();
-            result.add(unmarshaller.unmarshal(e.getSource()));
+            SoapHeaderElement element = it.next();
+            try {
+                result.add(unmarshaller.unmarshal(element.getSource()));
+            } catch(Exception e) {
+                logger.warn("Unknown DGWS soapheader element, cannot parse it ["+element+"]");
+            }
         }
         return result;
     }
