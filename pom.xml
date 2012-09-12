@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.trifork.dgws</groupId>
     <artifactId>dgws</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.2</version>
     <modules>
         <module>dgws-spring</module>
         <module>integration-test</module>
@@ -29,11 +28,11 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>trifork.snapshots</id>
+            <id>Trifork-Nexus-Snapshot-Repository</id>
             <url>https://nexus.trifork.com/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>trifork.releases</id>
+            <id>Trifork-Nexus-Release-Repository</id>
             <url>https://nexus.trifork.com/content/groups/releases/</url>
         </repository>
     </distributionManagement>
@@ -48,6 +47,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
                 <configuration>
                     <source>1.5</source>
                     <target>1.5</target>
