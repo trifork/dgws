@@ -2,8 +2,6 @@ package com.trifork.dgws.aspect;
 
 import static org.springframework.util.CollectionUtils.findValueOfType;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -14,7 +12,6 @@ import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.ws.soap.SoapHeader;
-import org.springframework.ws.soap.SoapHeaderElement;
 
 import com.trifork.dgws.MedcomRetransmission;
 import com.trifork.dgws.MedcomRetransmissionRegister;
@@ -22,6 +19,7 @@ import com.trifork.dgws.SecurityChecker;
 import com.trifork.dgws.annotations.Protected;
 import com.trifork.dgws.sosi.SOSIException;
 import com.trifork.dgws.sosi.SOSIFaultCode;
+import com.trifork.dgws.util.DGWSUtil;
 
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 
@@ -44,7 +42,7 @@ public class DgwsProtectionAspect {
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);
 
-        final List list = unmarshalHeaderElements(soapHeader);
+        final List<Object> list = DGWSUtil.unmarshalHeaderElements(soapHeader, unmarshaller);
         final Header medcomHeader = findValueOfType(list, Header.class);
         final Security securityHeader = findValueOfType(list, Security.class);
         
@@ -54,7 +52,7 @@ public class DgwsProtectionAspect {
         
         String messageID = medcomHeader.getLinking().getMessageID();
         logger.debug("Received webservice request with messageID=" + messageID);
-        //TODO: access checking…
+
         securityChecker.validateHeader(protectedAnnotation.whitelist(), protectedAnnotation.minAuthLevel(), securityHeader);
 
         if(medcomRetransmissionRegister != null){
@@ -88,13 +86,4 @@ public class DgwsProtectionAspect {
         throw new IllegalArgumentException("Endpoint method does not contain a SoapHeader argument or it is null");
     }
 
-    private List unmarshalHeaderElements(SoapHeader soapHeader) throws Exception {
-        List result = new ArrayList();
-        Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
-        while (it.hasNext()) {
-            SoapHeaderElement e = it.next();
-            result.add(unmarshaller.unmarshal(e.getSource()));
-        }
-        return result;
-    }
 }

@@ -1,7 +1,12 @@
 package com.trifork.dgws;
 
+import static org.springframework.util.CollectionUtils.findValueOfType;
+
+import java.util.List;
+
 import oasis.names.tc.saml._2_0.assertion.Attribute;
 import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
+
 import org.apache.commons.collections15.CollectionUtils;
 import org.apache.commons.collections15.Predicate;
 import org.apache.log4j.Logger;
@@ -10,15 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.server.EndpointInterceptor;
-import org.springframework.ws.soap.SoapHeader;
-import org.springframework.ws.soap.SoapHeaderElement;
 import org.springframework.ws.soap.SoapMessage;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.springframework.util.CollectionUtils.findValueOfType;
+import com.trifork.dgws.util.DGWSUtil;
 
 public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointInterceptor {
     private static Logger logger = Logger.getLogger(DgwsRequestContextDefault.class);
@@ -43,7 +42,7 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
 
     public boolean handleRequest(MessageContext messageContext, Object o) throws Exception {
         if (messageContext.getRequest() instanceof SoapMessage) {
-            List headerElements = unmarshalHeaderElements(((SoapMessage) messageContext.getRequest()).getSoapHeader());
+            List<Object> headerElements = DGWSUtil.unmarshalHeaderElements(((SoapMessage) messageContext.getRequest()).getSoapHeader(), unmarshaller);
             Security securityHeader = findValueOfType(headerElements, Security.class);
             securityThreadLocal.set(securityHeader);
         }
@@ -60,20 +59,6 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
 
     public void afterCompletion(MessageContext messageContext, Object o, Exception e) throws Exception {
         securityThreadLocal.remove();
-    }
-
-    private List unmarshalHeaderElements(SoapHeader soapHeader) throws Exception {
-        List result = new ArrayList();
-        final Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
-        while (it.hasNext()) {
-            SoapHeaderElement element = it.next();
-            try {
-                result.add(unmarshaller.unmarshal(element.getSource()));
-            } catch(Exception e) {
-                logger.warn("Unknown DGWS soapheader element, cannot parse it ["+element+"]");
-            }
-        }
-        return result;
     }
 
 }

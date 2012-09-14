@@ -1,7 +1,15 @@
 package com.trifork.dgws.util;
 
+import static org.springframework.util.CollectionUtils.findValueOfType;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import oasis.names.tc.saml._2_0.assertion.Attribute;
 import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
+
 import org.apache.commons.collections15.CollectionUtils;
 import org.apache.commons.collections15.Predicate;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
@@ -10,14 +18,8 @@ import org.springframework.oxm.Unmarshaller;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.springframework.util.CollectionUtils.findValueOfType;
-
 public class SecurityHelperImpl implements SecurityHelper {
+
     @SuppressWarnings("SpringJavaAutowiringInspection Should be wired by user")
     @Autowired
     Unmarshaller unmarshaller;
@@ -59,4 +61,5 @@ public class SecurityHelperImpl implements SecurityHelper {
         }
         return findValueOfType(elements, Security.class);
     }
+    
 }
