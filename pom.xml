@@ -6,7 +6,6 @@
     <version>1.0.5-SNAPSHOT</version>
     <modules>
         <module>dgws-spring</module>
-        <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
 
