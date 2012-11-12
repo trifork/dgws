@@ -38,6 +38,10 @@ public class DgwsProtectionAspect {
     @Autowired
     SecurityChecker securityChecker;
 
+    public DgwsProtectionAspect() {
+        System.out.println("DgwsProtectionAspect.DgwsProtectionAspect");
+    }
+
     @Around("@annotation(protectedAnnotation)")
     public Object doAccessCheck(ProceedingJoinPoint pjp, Protected protectedAnnotation) throws Throwable {
         SoapHeader soapHeader = extractSoapHeader(pjp);

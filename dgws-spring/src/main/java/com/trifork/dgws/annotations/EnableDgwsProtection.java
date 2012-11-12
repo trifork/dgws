@@ -1,11 +1,14 @@
 package com.trifork.dgws.annotations;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.Import;
 
-@Configuration
-@ImportResource({"classpath:/dk/trifork/dgws/dgws-protection.xml"})
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Import(DgwsConfiguration.class)
 public @interface EnableDgwsProtection {
 }
