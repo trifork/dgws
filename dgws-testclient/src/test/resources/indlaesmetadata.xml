@@ -1,0 +1,167 @@
+<ns:IndlaesMetadataRequest xmlns:ns="http://nsi.dk/bemyndigelse/2012/05/01/">
+    <!--Optional:-->
+    <Arbejdsfunktioner>
+
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Doctor</Arbejdsfunktion>
+            <Beskrivelse>Læge</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Dentist</Arbejdsfunktion>
+            <Beskrivelse>Tandlæge</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Midwife</Arbejdsfunktion>
+            <Beskrivelse>Jordemoder</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Nurse</Arbejdsfunktion>
+            <Beskrivelse>Sygeplejerske</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>SosuAssist</Arbejdsfunktion>
+            <Beskrivelse>Social- og sundhedsassistent</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>SosuHelp</Arbejdsfunktion>
+            <Beskrivelse>Social- og sundhedshjælper</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>HealthVisitor</Arbejdsfunktion>
+            <Beskrivelse>Sundhedsplejerske</Beskrivelse>
+        </Arbejdsfunktion>
+                <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Pharmacist</Arbejdsfunktion>
+            <Beskrivelse>Farmaceut</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Pharmaconomist</Arbejdsfunktion>
+            <Beskrivelse>Farmakonom</Beskrivelse>
+        </Arbejdsfunktion>
+        <!-- Assistenter -->
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>AssistantForDoctor</Arbejdsfunktion>
+            <Beskrivelse>Assistent for Læge</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>AssistantForDentist</Arbejdsfunktion>
+            <Beskrivelse>Assistent for Tandlæge</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>AssistantForMidwife</Arbejdsfunktion>
+            <Beskrivelse>Assistent for Jordemoder</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>AssistantForNurse</Arbejdsfunktion>
+            <Beskrivelse>Assistent for Sygeplejer</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>AssistantForSosuAssist</Arbejdsfunktion>
+            <Beskrivelse>Assistent for Social- og sundhedsassistent</Beskrivelse>
+        </Arbejdsfunktion>
+
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Citizen</Arbejdsfunktion>
+            <Beskrivelse>Borger</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>ParentAuthority</Arbejdsfunktion>
+            <Beskrivelse>Forældermyndighed</Beskrivelse>
+        </Arbejdsfunktion>
+        <Arbejdsfunktion>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Guardian</Arbejdsfunktion>
+            <Beskrivelse>Værge</Beskrivelse>
+        </Arbejdsfunktion>
+
+    </Arbejdsfunktioner>
+    <Rettigheder>
+
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>Administration</Rettighed>
+            <Beskrivelse>Administration</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>DEFAULT</Rettighed>
+            <Beskrivelse>Default permissions - Ingen specielle permissions påkrævet</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>VaccinationSe</Rettighed>
+            <Beskrivelse>Se Vaccinationer</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>VaccinationVedligehold</Rettighed>
+            <Beskrivelse>Vedligehold vaccinationer</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>VaccinationVedligeholdAnbefalet</Rettighed>
+            <Beskrivelse>Vedligehold anbefalede vaccinationer</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>VaccinationGodkend</Rettighed>
+            <Beskrivelse>Godkend vaccinationer</Beskrivelse>
+        </Rettighed>
+        <Rettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Rettighed>AuditLog</Rettighed>
+            <Beskrivelse>Se og søge i auditlog</Beskrivelse>
+        </Rettighed>
+    </Rettigheder>
+<!--
+    <DelegerbarRettigheder>
+
+        <DelegerbarRettighed>
+            <Domaene>Trifork</Domaene>
+            <System>DDV</System>
+            <Arbejdsfunktion>Doctor</Arbejdsfunktion>
+            <Rettighed>VaccinationGodkend</Rettighed>
+        </DelegerbarRettighed>
+    </DelegerbarRettigheder>
+-->
+</ns:IndlaesMetadataRequest>

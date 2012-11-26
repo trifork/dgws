@@ -1,0 +1,5 @@
+
+<ns:HentMetadataRequest xmlns:ns="http://nsi.dk/bemyndigelse/2012/05/01/">
+ <Domaene>Trifork</Domaene>
+ <System>DDV</System>
+</ns:HentMetadataRequest>

@@ -1,0 +1,3 @@
+<ddv:GetVaccinationCardRequest xmlns:ddv="http://vaccinationsregister.dk/schemas/2010/07/01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<ddv:PersonCivilRegistrationIdentifier>1111111118</ddv:PersonCivilRegistrationIdentifier>
+</ddv:GetVaccinationCardRequest>

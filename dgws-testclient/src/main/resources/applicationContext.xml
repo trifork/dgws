@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <context:component-scan base-package="com.trifork.dgws.testclient"/>
+
+    <bean id="dgwsTemplate" class="com.trifork.dgws.testclient.DGWSRequestHelper" init-method="init">
+        <property name="serviceEndpoint" value="${serviceurl}"/>
+
+        <property name="keystore" value="${keystore.path}"/>
+        <property name="keystorePassword" value="${keystore.password}"/>
+        <property name="keystoreAlias" value="${keystore.alias}" />
+
+        <property name="whitelistingHeaderEnabled" value="${whitelisting.header}" />
+    </bean>
+
+
+    <context:property-placeholder system-properties-mode="OVERRIDE" ignore-resource-not-found="true"
+                               location="classpath:config.properties, file:config.properties, file:${config}" file-encoding="ISO-8859-1"/>
+
+</beans>
