@@ -9,7 +9,6 @@
         <module>dgws-spring</module>
         <module>sample</module>
         <module>integration-test</module>
-        <module>dgws-testclient</module>
     </modules>
     <packaging>pom</packaging>
 
