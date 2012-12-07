@@ -16,6 +16,9 @@ public class DGWSUtil {
     
     public static List<Object> unmarshalHeaderElements(SoapHeader soapHeader, Unmarshaller unmarshaller) throws Exception {
         List<Object> result = new ArrayList<Object>();
+        if(soapHeader == null) {
+        	return result;
+        }
         final Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
         while (it.hasNext()) {
             SoapHeaderElement element = it.next();
