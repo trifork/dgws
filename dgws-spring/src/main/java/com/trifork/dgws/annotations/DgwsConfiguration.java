@@ -11,14 +11,14 @@ import java.util.Map;
 @Configuration
 @ImportResource("classpath:/dk/trifork/dgws/dgws-protection.xml")
 public class DgwsConfiguration implements ImportAware, EmbeddedValueResolverAware {
-    Boolean production = true;
+    Boolean test = false;
     Boolean skipSosi = false;
     private StringValueResolver resolver;
 
     public void setImportMetadata(AnnotationMetadata importMetadata) {
         final Map<String, Object> meta = importMetadata.getAnnotationAttributes(EnableDgwsProtection.class.getName());
-        if (meta.containsKey("production")) {
-            production = resolveBoolean(meta.get("production"));
+        if (meta.containsKey("test")) {
+            test = resolveBoolean(meta.get("test"));
         }
         if (meta.containsKey("skipSOSI")) {
             skipSosi = resolveBoolean(meta.get("skipSOSI"));
@@ -32,7 +32,7 @@ public class DgwsConfiguration implements ImportAware, EmbeddedValueResolverAwar
     @Bean
     public SOSISecurityInterceptor sosiSecurityInterceptor() {
         SOSISecurityInterceptor interceptor = new SOSISecurityInterceptor();
-        interceptor.setProduction(production);
+        interceptor.setProduction(!test);
         interceptor.setCanSkipSosi(skipSosi);
         return interceptor;
     }

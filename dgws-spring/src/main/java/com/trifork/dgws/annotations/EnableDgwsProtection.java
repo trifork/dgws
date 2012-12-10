@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Import(DgwsConfiguration.class)
 public @interface EnableDgwsProtection {
-    String production() default "true";
+    String test() default "false";
     String skipSOSI() default "false";
 }
