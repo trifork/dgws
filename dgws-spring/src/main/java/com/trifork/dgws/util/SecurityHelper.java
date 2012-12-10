@@ -10,4 +10,5 @@ public interface SecurityHelper {
     String getAttributeValue(SoapHeader soapHeader, String attributeStatementId, String attributeName);
 
     Security extractSecurity(SoapHeader soapHeader);
+    
 }
