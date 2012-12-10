@@ -16,9 +16,13 @@ public class DgwsConfiguration implements ImportAware, EmbeddedValueResolverAwar
     private StringValueResolver resolver;
 
     public void setImportMetadata(AnnotationMetadata importMetadata) {
-        final Map<String, Object> meta = importMetadata.getAnnotationAttributes("com.trifork.dgws.annotations.EnableDgwsProtection");
-        production = resolveBoolean(meta.get("production"));
-        skipSosi = resolveBoolean(meta.get("skipSOSI"));
+        final Map<String, Object> meta = importMetadata.getAnnotationAttributes(EnableDgwsProtection.class.getName());
+        if (meta.containsKey("production")) {
+            production = resolveBoolean(meta.get("production"));
+        }
+        if (meta.containsKey("skipSOSI")) {
+            skipSosi = resolveBoolean(meta.get("skipSOSI"));
+        }
     }
 
     private boolean resolveBoolean(Object value) {
