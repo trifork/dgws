@@ -26,18 +26,22 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     Unmarshaller unmarshaller;
 
     public String getIdCardCpr() {
+        return getUserLogAttribute("medcom:UserCivilRegistrationNumber");
+    }
+
+    public String getUserLogAttribute(final String attributeName) {
         final AttributeStatement userLog = CollectionUtils.find(securityThreadLocal.get().getAssertion().getAttributeStatement(), new Predicate<AttributeStatement>() {
             public boolean evaluate(AttributeStatement attributeStatement) {
                 return attributeStatement.getId().equals("UserLog");
             }
         });
-        final Attribute cprAttribute = CollectionUtils.find(userLog.getAttribute(), new Predicate<Attribute>() {
+        final Attribute attribute = CollectionUtils.find(userLog.getAttribute(), new Predicate<Attribute>() {
             public boolean evaluate(Attribute attribute) {
-                return attribute.getName().equals("medcom:UserCivilRegistrationNumber");
+                return attribute.getName().equals(attributeName);
             }
         });
-        logger.debug("Found CPR=" + cprAttribute.getAttributeValue() + " in header");
-        return cprAttribute.getAttributeValue();
+        logger.debug("Found " + attributeName + "=" + attribute.getAttributeValue() + " in header");
+        return attribute.getAttributeValue();
     }
 
     public boolean handleRequest(MessageContext messageContext, Object o) throws Exception {
