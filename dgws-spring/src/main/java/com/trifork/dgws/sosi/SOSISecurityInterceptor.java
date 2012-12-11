@@ -115,8 +115,16 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			
 		} catch (SignatureInvalidModelBuildException e) {
 			logger.error("Invalid signature received from " + getRemote(), e);
+			if (canSkip && !isProduction) {
+				logger.info("Skipping SOSI processing because of SignatureInvalidModelBuildException");
+				return true;
+			}
 			throw new SOSIException(invalid_signature, e);
 		} catch (ModelBuildException e) {
+			if (canSkip && !isProduction) {
+				logger.info("Skipping SOSI processing because of ModelBuildException.");
+				return true;
+			}
 			logger.error("Unable to process SOSI ID card", e);
 			throw new SOSIException(syntax_error, e);
 		} catch (XmlUtilException e) {
@@ -139,6 +147,10 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			throw new SOSIException(syntax_error, e);
 		} catch (ModelException e) {
 			logger.error("Unable to process SOSI ID card: " + e.getMessage(), e);
+			if (canSkip && !isProduction) {
+				logger.info("Skipping SOSI processing because of ModelBuildException.");
+				return true;
+			}
 			throw new SOSIException(syntax_error, e);
 		}
 		

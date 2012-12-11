@@ -25,10 +25,22 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     @Autowired
     Unmarshaller unmarshaller;
 
+    public IdCardUserLog getIdCardUserLog() {
+    	String cpr = getUserLogAttribute("medcom:UserCivilRegistrationNumber");
+    	String givenName = getUserLogAttribute("medcom:UserGivenName");
+    	String surname = getUserLogAttribute("medcom:UserSurName");
+    	String emailAddress = getUserLogAttribute("medcom:UserEmailAddress");
+    	String role = getUserLogAttribute("medcom:UserRole");
+    	String occupation = getUserLogAttribute("medcom:UserOccupation");
+    	String authorisationCode = getUserLogAttribute("medcom:UserAuthorizationCode");
+    	return new IdCardUserLog(cpr, givenName, surname, emailAddress, role, occupation, authorisationCode);
+    }
+    
+    @Deprecated
     public String getIdCardCpr() {
         return getUserLogAttribute("medcom:UserCivilRegistrationNumber");
     }
-
+    
     public String getUserLogAttribute(final String attributeName) {
         final AttributeStatement userLog = CollectionUtils.find(securityThreadLocal.get().getAssertion().getAttributeStatement(), new Predicate<AttributeStatement>() {
             public boolean evaluate(AttributeStatement attributeStatement) {
@@ -40,8 +52,13 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
                 return attribute.getName().equals(attributeName);
             }
         });
-        logger.debug("Found " + attributeName + "=" + attribute.getAttributeValue() + " in header");
-        return attribute.getAttributeValue();
+        if(attribute != null) {
+	        logger.debug("Found " + attributeName + "=" + attribute.getAttributeValue() + " in header");
+	        return attribute.getAttributeValue();
+        }
+        else {
+        	return null;
+        }
     }
 
     public boolean handleRequest(MessageContext messageContext, Object o) throws Exception {
