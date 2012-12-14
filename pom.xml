@@ -8,7 +8,7 @@
         <module>dgws-spring</module>
     </modules>
     <properties>
-        <spring.version>3.1.1.RELEASE</spring.version>
+        <spring.version>3.2.0.RELEASE</spring.version>
     </properties>
     <packaging>pom</packaging>
 
