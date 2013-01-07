@@ -23,6 +23,9 @@ public class SecurityCheckerImplTest {
 
     @Mock
     WhitelistChecker whitelistChecker;
+    
+    @Mock 
+    DgwsRequestContext dgwsRequestContext;
 
     Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
 
@@ -41,8 +44,9 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
-        securityChecker.validateHeader("", 0, securityHeader);
+        when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 3));
 
+        securityChecker.validateHeader("", 0, securityHeader);
         verify(whitelistChecker, never()).getLegalCvrNumbers(any(String.class));
     }
 
@@ -52,6 +56,8 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
+        when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
+        when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 3));
         when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("25520041"));
 
         securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
@@ -63,6 +69,7 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
+        when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
         when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("0"));
 
         securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
@@ -71,6 +78,8 @@ public class SecurityCheckerImplTest {
     @Test(expected = IllegalAccessError.class)
     public void willThrowAccessViolationOnWrongMinLevel() throws Exception {
         StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader2.xml"));
+        when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
+        when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 2));
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
  
