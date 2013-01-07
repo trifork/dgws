@@ -1,7 +1,15 @@
 package com.trifork.dgws;
 
 public interface DgwsRequestContext {
+    /**
+     * @deprecated use getUserLogAttributeValue("medcom:UserCivilRegistrationNumber") instead
+     * @return
+     */
+	@Deprecated
     String getIdCardCpr();
+	
+	IdCardData getIdCardData();
     IdCardUserLog getIdCardUserLog();
-    String getUserLogAttribute(String attributeName);
+    IdCardSystemLog getIdCardSystemLog();
+    String getUserLogAttributeValue(String attributeName);
 }
