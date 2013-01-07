@@ -79,10 +79,6 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	return new IdCardData(idCardType, authenticationLevel);
     }
 
-    /**
-     * @deprecated use getUserLogAttributeValue("medcom:UserCivilRegistrationNumber") instead
-     * @return
-     */
     @Deprecated
     public String getIdCardCpr() {
         return getUserLogAttributeValue("medcom:UserCivilRegistrationNumber");
