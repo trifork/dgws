@@ -11,6 +11,7 @@ import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
 
 import org.apache.commons.collections15.CollectionUtils;
 import org.apache.commons.collections15.Predicate;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,13 +55,6 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	return new IdCardUserLog(cpr, givenName, surname, emailAddress, role, occupation, authorisationCode);
     }
     
-    private String trim(String toBeTrimmed) {
-    	if(toBeTrimmed == null) {
-    		return null;
-    	}
-    	return toBeTrimmed.trim();
-    }
-    
     public IdCardSystemLog getIdCardSystemLog() {
     	String itSystemName = getSystemLogAttributeValue("medcom:ITSystemName");
     	Attribute careProviderIdAttribute = findAttribute("SystemLog", "medcom:CareProviderID");
@@ -68,7 +62,7 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	String careProviderIdNameFormat = careProviderIdAttribute.getNameFormat();
     	CareProviderIdType  careProviderIdType= careProviderNameFormatMap.get(careProviderIdNameFormat);
     	String careProviderName = getSystemLogAttributeValue("medcom:CareProviderName");
-    	return new IdCardSystemLog(trim(itSystemName), careProviderIdType, trim(careProviderId), trim(careProviderName));
+    	return new IdCardSystemLog(StringUtils.trim(itSystemName), careProviderIdType, StringUtils.trim(careProviderId), StringUtils.trim(careProviderName));
     }
     
     public IdCardData getIdCardData() {
