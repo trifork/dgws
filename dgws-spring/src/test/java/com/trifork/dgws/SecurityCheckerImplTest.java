@@ -47,7 +47,8 @@ public class SecurityCheckerImplTest {
         when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 3));
 
         securityChecker.validateHeader("", 0, securityHeader);
-        verify(whitelistChecker, never()).getLegalCvrNumbers(any(String.class));
+        verify(whitelistChecker, never()).isSystemWhitelisted(any(String.class), any(String.class));
+        verify(whitelistChecker, never()).isUserWhitelisted(any(String.class), any(String.class), any(String.class));
     }
 
     @Test
@@ -58,7 +59,7 @@ public class SecurityCheckerImplTest {
 
         when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
         when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 3));
-        when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("25520041"));
+        when(whitelistChecker.isSystemWhitelisted("TestWhiteList", "25520041")).thenReturn(true);
 
         securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
     }
@@ -69,8 +70,9 @@ public class SecurityCheckerImplTest {
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
 
+        when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 3));
         when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
-        when(whitelistChecker.getLegalCvrNumbers("TestWhiteList")).thenReturn(singleton("0"));
+        when(whitelistChecker.isSystemWhitelisted("TestWhiteList", "25520041")).thenReturn(false);
 
         securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
     }
