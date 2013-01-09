@@ -84,17 +84,13 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			RequestHeader requestHeader = getFactory().deserializeRequestHeader(headerStr);
 			IDCard idc = requestHeader.getIDCard();
 	
-			if (!(idc instanceof UserIDCard)) {
-				logger.error("Unable to process wrong id card type: " + idc.getClass());
-				throw new SOSIException(invalid_idcard, "Only UserID cards can be used. Received type: " + idc.getClass());
-			}
 			Date now = new Date();
 			
 			if (!idc.isValidInTime()) {
 				logger.error("ID card is not valid in time. " + idc.getExpiryDate() + ": " + idc.getCreatedDate() + ". My date: " + now + ", request: " + requestHeader.getCreationDate());
 				throw new SOSIException(expired_idcard, "ID card is not valid in time. Timestamp: " + idc.getExpiryDate());
 			}
-			UserIDCard card = (UserIDCard) idc;
+			SystemIDCard card = (SystemIDCard) idc;
 			logger.debug("Received SOSI request: " + requestHeader.getMessageID());
 			
 			if (card.getAuthenticationLevel() == null || card.getAuthenticationLevel().getLevel() < 3) {

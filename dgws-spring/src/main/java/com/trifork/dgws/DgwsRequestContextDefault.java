@@ -39,6 +39,7 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	put(SubjectIdentifierTypeValues.SKS_CODE, CareProviderIdType.SKS_CODE);
     }};
 
+	@SuppressWarnings("serial")
 	private static final Map<String, IdCardType> idCardTypeMap = new HashMap<String, IdCardType>() {{
     	put("user", IdCardType.USER);
     	put("system", IdCardType.SYSTEM);
