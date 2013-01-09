@@ -3,7 +3,7 @@
 
     <groupId>com.trifork.dgws</groupId>
     <artifactId>dgws</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0</version>
     <modules>
         <module>dgws-spring</module>
     </modules>
