@@ -76,7 +76,8 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return factory;
 	}
 	
-	public boolean handleRequest(MessageContext ctx, Object arg1) throws Exception {
+	@Override
+    public boolean handleRequest(MessageContext ctx, Object arg1) throws Exception {
 		SOSIContext.setCard(null);
 
 		String headerStr = sourceToString(getSource(ctx.getRequest()));
@@ -162,12 +163,14 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		}
 	}
 
-	public boolean handleFault(MessageContext ctx, Object arg1) throws Exception {
+	@Override
+    public boolean handleFault(MessageContext ctx, Object arg1) throws Exception {
 		return handleResponse(ctx, arg1);
 	}
 
 
-	public boolean handleResponse(MessageContext ctx, Object arg1) throws Exception {
+	@Override
+    public boolean handleResponse(MessageContext ctx, Object arg1) throws Exception {
 		SOSIContext.setCard(null);
 		SOSIContext.setMessageId(null);
 		
@@ -267,7 +270,8 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return writer.toString();
 	}
 
-	public void afterPropertiesSet() throws Exception {
+	@Override
+    public void afterPropertiesSet() throws Exception {
 		transformerFactory = new MyTransformerFactory();
 	}
 	private static class MyTransformerFactory extends TransformerObjectSupport {
@@ -279,6 +283,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		}
 	}
 
+    @Override
     public void afterCompletion(MessageContext messageContext, Object endpoint, Exception ex) throws Exception {
     }
 }
