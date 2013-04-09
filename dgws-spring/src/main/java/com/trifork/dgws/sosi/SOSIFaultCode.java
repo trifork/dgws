@@ -21,8 +21,10 @@ public enum SOSIFaultCode {
 	nonrepudiation_not_supported(SERVER),
 	
 	// Custom FaultCodes:
-	server_error(SERVER);
-	
+	server_error(SERVER),
+    request_payload_validation_error(SERVER),
+    response_payload_validation_error(SERVER);
+
 	// Implementation
 	private QName soapFaultCode;
 	private SOSIFaultCode(QName soapFaultCode) {
