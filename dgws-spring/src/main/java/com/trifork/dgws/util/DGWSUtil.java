@@ -10,6 +10,8 @@ import org.apache.log4j.Logger;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
+import javax.xml.namespace.QName;
+
 public class DGWSUtil {
     
     private static Logger logger = Logger.getLogger(DGWSUtil.class);
@@ -24,8 +26,16 @@ public class DGWSUtil {
             SoapHeaderElement element = it.next();
             try {
                 result.add(unmarshaller.unmarshal(element.getSource()));
-            } catch(Exception e) {
-                logger.warn("Unknown DGWS soapheader element, cannot parse it ["+element+"]");
+            } catch (Exception e) {
+                StringBuilder detail = new StringBuilder();
+                QName qName = element.getName();
+                String prefix = qName.getPrefix();
+                String nsUri = qName.getNamespaceURI();
+                String localPart = qName.getLocalPart();
+                detail.append(prefix).append(":").append(localPart).append(" xmlns:").append(prefix).append("=\"").append(nsUri).append("\"");
+
+                logger.info("Unknown DGWS soapheader element, cannot unmarshal it [" + detail.toString() + "]");
+
             }
         }
         return result;
