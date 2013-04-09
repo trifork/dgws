@@ -27,6 +27,7 @@ import java.io.StringWriter;
  * To change the default behavior call setCreateFaultWhenRequestNotValid and setCreateFaultWhenResponseNotValid.
  * <p/>
  * The detail element will contain a list of the validation errors if getAddValidationErrorDetail is true (the default).
+ * If you need to change how the detail element is populated with the validation errors you can overwrite the method handleDetailElement and populate the element as desired.
  * <p/>
  * Call @{link AbstractFaultCreatingValidatingInterceptor.setDetailElementName} to specify the QName of the Detail element containing the error message.
  */
@@ -135,14 +136,18 @@ public class DgwsPayloadValidatingInterceptor extends AbstractFaultCreatingValid
                     de1.addText(SOSIFaultCode.response_payload_validation_error.name());
                 }
 
-                SoapFaultDetailElement de2 = detail.addFaultDetailElement(getDetailElementName());
-                StringBuilder errorMessage = new StringBuilder();
-                for (SAXParseException error : errors) {
-                    errorMessage.append(error.getMessage()).append("\n");
-                }
-                de2.addText(errorMessage.toString());
+                handleDetailElement(errors, detail);
             }
         }
+    }
+
+    protected void handleDetailElement(SAXParseException[] errors, SoapFaultDetail detail) {
+        SoapFaultDetailElement de2 = detail.addFaultDetailElement(getDetailElementName());
+        StringBuilder errorMessage = new StringBuilder();
+        for (SAXParseException error : errors) {
+            errorMessage.append(error.getMessage()).append("\n");
+        }
+        de2.addText(errorMessage.toString());
     }
 
     public boolean getCreateFaultWhenResponseNotValid() {
