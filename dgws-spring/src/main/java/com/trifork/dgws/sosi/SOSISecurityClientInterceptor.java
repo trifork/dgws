@@ -42,11 +42,13 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 	private SOSIFederation federation;
 	private CredentialVault vault;
 	
-	public boolean handleFault(MessageContext arg0) throws WebServiceClientException {
+	@Override
+    public boolean handleFault(MessageContext arg0) throws WebServiceClientException {
 		return true;
 	}
 
-	@SuppressWarnings("serial")
+	@Override
+    @SuppressWarnings("serial")
 	public boolean handleRequest(MessageContext ctx) throws WebServiceClientException {
 		IDCard card = (IDCard) ctx.getProperty(ID_CARD);
 		if (card == null) card = SOSIContext.getCard();
@@ -82,11 +84,13 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 		return true;
 	}
 
-	public boolean handleResponse(MessageContext arg0) throws WebServiceClientException {
+	@Override
+    public boolean handleResponse(MessageContext arg0) throws WebServiceClientException {
 		return true;
 	}
 	
-	public void afterPropertiesSet() throws Exception {
+	@Override
+    public void afterPropertiesSet() throws Exception {
 		Properties props = SignatureUtil.setupCryptoProviderForJVM();
 		vault = new EmptyCredentialVault();
 		federation = new SOSIFederation(props);

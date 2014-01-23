@@ -15,6 +15,7 @@ public class DgwsConfiguration implements ImportAware, EmbeddedValueResolverAwar
     Boolean skipSosi = false;
     private StringValueResolver resolver;
 
+    @Override
     public void setImportMetadata(AnnotationMetadata importMetadata) {
         final Map<String, Object> meta = importMetadata.getAnnotationAttributes(EnableDgwsProtection.class.getName());
         if (meta.containsKey("test")) {
@@ -37,6 +38,7 @@ public class DgwsConfiguration implements ImportAware, EmbeddedValueResolverAwar
         return interceptor;
     }
 
+    @Override
     public void setEmbeddedValueResolver(StringValueResolver resolver) {
         this.resolver = resolver;
     }

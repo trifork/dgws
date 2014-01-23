@@ -15,6 +15,7 @@ public class SecurityCheckerImpl implements SecurityChecker {
     @Autowired 
     DgwsRequestContext dgwsRequestContext;
 
+    @Override
     public void validateHeader(String whitelist, int minAuthLevel, Security securityHeader) {
         if (isNotEmpty(whitelist)) {
         	IdCardData idCardData = dgwsRequestContext.getIdCardData();

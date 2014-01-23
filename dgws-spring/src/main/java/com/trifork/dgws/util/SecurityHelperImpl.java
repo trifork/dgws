@@ -24,16 +24,19 @@ public class SecurityHelperImpl implements SecurityHelper {
     @Autowired
     Unmarshaller unmarshaller;
 
+    @Override
     public String getCpr(SoapHeader soapHeader) {
         return getAttributeValue(soapHeader, "UserLog", "medcom:UserCivilRegistrationNumber");
     }
 
+    @Override
     public String getAttributeValue(SoapHeader soapHeader, final String attributeStatementId, final String attributeName) {
         Security security = extractSecurity(soapHeader);
 
         AttributeStatement attributeStatement = CollectionUtils.find(
                 security.getAssertion().getAttributeStatement(),
                 new Predicate<AttributeStatement>() {
+                    @Override
                     public boolean evaluate(AttributeStatement element) {
                         return element.getId().equals(attributeStatementId);
                     }
@@ -41,6 +44,7 @@ public class SecurityHelperImpl implements SecurityHelper {
         Attribute attribute = CollectionUtils.find(
                 attributeStatement.getAttribute(),
                 new Predicate<Attribute>() {
+                    @Override
                     public boolean evaluate(Attribute object) {
                         return object.getName().equals(attributeName);
                     }
@@ -49,6 +53,7 @@ public class SecurityHelperImpl implements SecurityHelper {
         return attribute.getAttributeValue();
     }
 
+    @Override
     public Security extractSecurity(SoapHeader soapHeader) {
         List elements = new ArrayList();
         Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();

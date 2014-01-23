@@ -45,6 +45,7 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	put("system", IdCardType.SYSTEM);
     }};
 
+    @Override
     public IdCardUserLog getIdCardUserLog() {
     	String cpr = getUserLogAttributeValue("medcom:UserCivilRegistrationNumber");
     	String givenName = getUserLogAttributeValue("medcom:UserGivenName");
@@ -55,7 +56,8 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	String authorisationCode = getUserLogAttributeValue("medcom:UserAuthorizationCode");
     	return new IdCardUserLog(cpr, givenName, surname, emailAddress, role, occupation, authorisationCode);
     }
-    
+
+    @Override
     public IdCardSystemLog getIdCardSystemLog() {
     	String itSystemName = getSystemLogAttributeValue("medcom:ITSystemName");
     	Attribute careProviderIdAttribute = findAttribute("SystemLog", "medcom:CareProviderID");
@@ -65,7 +67,8 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	String careProviderName = getSystemLogAttributeValue("medcom:CareProviderName");
     	return new IdCardSystemLog(StringUtils.trim(itSystemName), careProviderIdType, StringUtils.trim(careProviderId), StringUtils.trim(careProviderName));
     }
-    
+
+    @Override
     public IdCardData getIdCardData() {
     	AttributeStatement idCardData = findAttributeStatement(securityThreadLocal.get().getAssertion().getAttributeStatement(), "IDCardData");
     	int authenticationLevel = Integer.parseInt(findAttribute(idCardData, "sosi:AuthenticationLevel").getAttributeValue());
@@ -75,12 +78,14 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     }
 
     @Deprecated
+    @Override
     public String getIdCardCpr() {
         return getUserLogAttributeValue("medcom:UserCivilRegistrationNumber");
     }
     
     public AttributeStatement findAttributeStatement(List<AttributeStatement> statements, final String attributeStatementId) {
         return CollectionUtils.find(statements, new Predicate<AttributeStatement>() {
+            @Override
             public boolean evaluate(AttributeStatement attributeStatement) {
                 return attributeStatement.getId().equals(attributeStatementId);
             }
@@ -89,6 +94,7 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     
     public Attribute findAttribute(AttributeStatement statement, final String attributeName) {
         return CollectionUtils.find(statement.getAttribute(), new Predicate<Attribute>() {
+            @Override
             public boolean evaluate(Attribute attribute) {
                 return attribute.getName().equals(attributeName);
             }
@@ -102,7 +108,8 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     	}
     	return findAttribute(statement, attributeName);
     }
-    
+
+    @Override
     public String getUserLogAttributeValue(final String attributeName) {
     	
         final Attribute attribute = findAttribute("UserLog", attributeName);
@@ -135,7 +142,8 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
         Security securityHeader = findValueOfType(headerElements, Security.class);
         setSecurityThreadLocal(securityHeader);
     }
-    
+
+    @Override
     public boolean handleRequest(MessageContext messageContext, Object o) throws Exception {
         if (messageContext.getRequest() instanceof SoapMessage) {
             SoapHeader soapHeader = ((SoapMessage) messageContext.getRequest()).getSoapHeader();
@@ -144,14 +152,17 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
         return true;
     }
 
+    @Override
     public boolean handleResponse(MessageContext messageContext, Object o) throws Exception {
         return true;
     }
 
+    @Override
     public boolean handleFault(MessageContext messageContext, Object o) throws Exception {
         return true;
     }
 
+    @Override
     public void afterCompletion(MessageContext messageContext, Object o, Exception e) throws Exception {
         securityThreadLocal.remove();
     }
