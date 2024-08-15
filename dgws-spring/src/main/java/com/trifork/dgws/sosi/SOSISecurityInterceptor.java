@@ -1,17 +1,26 @@
 package com.trifork.dgws.sosi;
 
-import dk.sosi.seal.SOSIFactory;
-import dk.sosi.seal.model.*;
-import dk.sosi.seal.model.constants.DGWSConstants;
-import dk.sosi.seal.model.constants.FlowStatusValues;
-import dk.sosi.seal.modelbuilders.ModelBuildException;
-import dk.sosi.seal.modelbuilders.SignatureInvalidModelBuildException;
-import dk.sosi.seal.pki.SOSIFederation;
-import dk.sosi.seal.pki.SOSITestFederation;
-import dk.sosi.seal.vault.ClasspathCredentialVault;
-import dk.sosi.seal.vault.CredentialVault;
-import dk.sosi.seal.vault.EmptyCredentialVault;
-import dk.sosi.seal.xml.XmlUtilException;
+import static com.trifork.dgws.sosi.SOSIFaultCode.expired_idcard;
+import static com.trifork.dgws.sosi.SOSIFaultCode.invalid_signature;
+import static com.trifork.dgws.sosi.SOSIFaultCode.missing_required_header;
+import static com.trifork.dgws.sosi.SOSIFaultCode.security_level_failed;
+import static com.trifork.dgws.sosi.SOSIFaultCode.syntax_error;
+
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.ws.WebServiceMessage;
@@ -30,17 +39,25 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-
-import static com.trifork.dgws.sosi.SOSIFaultCode.*;
+import dk.sosi.seal.SOSIFactory;
+import dk.sosi.seal.model.IDCard;
+import dk.sosi.seal.model.ModelException;
+import dk.sosi.seal.model.Reply;
+import dk.sosi.seal.model.Request;
+import dk.sosi.seal.model.RequestHeader;
+import dk.sosi.seal.model.SignatureUtil;
+import dk.sosi.seal.model.SystemIDCard;
+import dk.sosi.seal.model.constants.DGWSConstants;
+import dk.sosi.seal.model.constants.FlowStatusValues;
+import dk.sosi.seal.modelbuilders.ModelBuildException;
+import dk.sosi.seal.modelbuilders.SignatureInvalidModelBuildException;
+import dk.sosi.seal.pki.SOSIFederation;
+import dk.sosi.seal.pki.SOSITestFederation;
+import dk.sosi.seal.vault.ClasspathCredentialVault;
+import dk.sosi.seal.vault.CredentialVault;
+import dk.sosi.seal.vault.EmptyCredentialVault;
+import dk.sosi.seal.xml.XmlUtilException;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Handle SOSI level 4 requests.

@@ -1,22 +1,23 @@
 package com.trifork.dgws;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.xml.transform.stream.StreamSource;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.w3._2000._09.xmldsig.Signature;
+import org.w3._2000._09.xmldsig_.Signature;
 
 public class DgwsRequestContextDefaultTest {
 	DgwsRequestContextDefault dgwsRequestContext = new DgwsRequestContextDefault();
 
     Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
 
-    @Before
+    @BeforeEach
     public void setupMarshaller() throws Exception {
         marshaller.setClassesToBeBound(
                 Security.class,
@@ -59,7 +60,7 @@ public class DgwsRequestContextDefaultTest {
     	assertEquals("Doctor", userLog.role);
     }
     
-    @After
+    @AfterEach
     public void tearDown() {
     	dgwsRequestContext.securityThreadLocal.remove();
     }

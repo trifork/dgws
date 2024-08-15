@@ -1,22 +1,26 @@
 package com.trifork.dgws;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.w3._2000._09.xmldsig.Signature;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import javax.xml.transform.stream.StreamSource;
 
-import static java.util.Collections.singleton;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.w3._2000._09.xmldsig_.Signature;
 
-@RunWith(MockitoJUnitRunner.class)
+
+@ExtendWith(MockitoExtension.class)
 public class SecurityCheckerImplTest {
     @InjectMocks
     SecurityCheckerImpl securityChecker = new SecurityCheckerImpl();
@@ -29,7 +33,7 @@ public class SecurityCheckerImplTest {
 
     Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         marshaller.setClassesToBeBound(
                 Security.class,
@@ -64,7 +68,7 @@ public class SecurityCheckerImplTest {
         securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
     }
 
-    @Test(expected = IllegalAccessError.class)
+    @Test
     public void willThrowAccessViolationOnIllegalCvr() throws Exception {
         StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader1.xml"));
         final Security securityHeader = (Security) marshaller.unmarshal(source);
@@ -74,17 +78,21 @@ public class SecurityCheckerImplTest {
         when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
         when(whitelistChecker.isSystemWhitelisted("TestWhiteList", "25520041")).thenReturn(false);
 
-        securityChecker.validateHeader("TestWhiteList", 0, securityHeader);
+        assertThrows(IllegalAccessError.class, () -> { 
+            securityChecker.validateHeader("TestWhiteList", 0, securityHeader);    
+        });
     }
     
-    @Test(expected = IllegalAccessError.class)
+    @Test
     public void willThrowAccessViolationOnWrongMinLevel() throws Exception {
         StreamSource source = new StreamSource(getClass().getResourceAsStream("/SecurityHeader2.xml"));
-        when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
+        //when(dgwsRequestContext.getIdCardSystemLog()).thenReturn(new IdCardSystemLog("IT System", CareProviderIdType.CVR_NUMBER, "25520041", "Care provider name"));
         when(dgwsRequestContext.getIdCardData()).thenReturn(new IdCardData(IdCardType.SYSTEM, 2));
         final Security securityHeader = (Security) marshaller.unmarshal(source);
         assertNotNull(securityHeader);
- 
-        securityChecker.validateHeader("", 3, securityHeader);
+
+        assertThrows(IllegalAccessError.class, () -> { 
+            securityChecker.validateHeader("", 3, securityHeader);
+        });
     }
 }

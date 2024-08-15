@@ -1,13 +1,16 @@
 package com.trifork.dgws.aspect;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 import javax.xml.transform.Source;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +19,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
@@ -30,14 +33,16 @@ import com.trifork.dgws.sosi.SOSIException;
 import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 import dk.medcom.dgws._2006._04.dgws_1_0.Linking;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {DgwsProtectionAspectTest.TestContext.class})
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = { DgwsProtectionAspectTest.TestContext.class })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DgwsProtectionAspectTest {
-    @Autowired @Qualifier("protectedTargetProxy")
+    @Autowired
+    @Qualifier("protectedTargetProxy")
     ProtectedTargetProxy protectedTargetProxy;
 
-    @Autowired @Qualifier("protectedTargetMock")
+    @Autowired
+    @Qualifier("protectedTargetMock")
     ProtectedTarget protectedTargetMock;
 
     @Autowired
@@ -152,16 +157,16 @@ public class DgwsProtectionAspectTest {
         verify(securityChecker).validateHeader("", 3, security);
         verify(protectedTargetMock).publicHitMe(soapHeader);
     }
-        
+
     @Test
-    public void willForwardWithMinAuthLevel() throws Exception{
-    	SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+    public void willForwardWithMinAuthLevel() throws Exception {
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
         SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
         Source sourceHeader = mock(Source.class);
         Source sourceSecurity = mock(Source.class);
         Header medcomHeader = createMedcomHeader("TEST");
         Security security = new Security();
-        
+
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
         when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
         when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
@@ -169,38 +174,37 @@ public class DgwsProtectionAspectTest {
         when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
         when(protectedTargetMock.hitMeAuth(soapHeader)).thenReturn("HIT");
-        
+
         assertEquals("HIT", protectedTargetProxy.hitMeAuth(soapHeader));
-        
+
         verify(securityChecker).validateHeader("", 2, security);
         verify(protectedTargetMock).hitMeAuth(soapHeader);
     }
-    
+
     @Test
-    public void willForwardWithoutMinAuthLevel() throws Exception{
-    	SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+    public void willForwardWithoutMinAuthLevel() throws Exception {
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
         SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
         Source sourceHeader = mock(Source.class);
         Source sourceSecurity = mock(Source.class);
         Header medcomHeader = createMedcomHeader("TEST");
         Security security = new Security();
-        
+
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
         when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
         when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
-        
+
         when(unmarshaller.unmarshal(sourceHeader)).thenReturn(medcomHeader);
         when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
         when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
-        
+
         assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
-        
+
         verify(securityChecker).validateHeader("", 3, security);
         verify(protectedTargetMock).publicHitMe(soapHeader);
     }
-    
-    
+
     @Test
     public void willNotAllowNullSoapHeader() throws Exception {
         try {
@@ -232,26 +236,26 @@ public class DgwsProtectionAspectTest {
         verify(protectedTargetMock, never()).hitMe(soapHeader);
         verify(medcomRetransmissionRegister, never()).createReplay("TEST", expectedResponse);
     }
-    
-    @Test(expected=SOSIException.class)
-    public void willThrowExceptionOnInvalidMedcom() throws Exception{
-    	SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
+
+    @Test
+    public void willThrowExceptionOnInvalidMedcom() throws Exception {
+        SoapHeaderElement soapHeaderElementHeader = mock(SoapHeaderElement.class);
         SoapHeaderElement soapHeaderElementSecurity = mock(SoapHeaderElement.class);
         Source sourceHeader = mock(Source.class);
         Source sourceSecurity = mock(Source.class);
         Security security = new Security();
-        
+
         when(soapHeader.examineAllHeaderElements()).thenReturn(asList(soapHeaderElementHeader, soapHeaderElementSecurity).iterator());
         when(soapHeaderElementHeader.getSource()).thenReturn(sourceHeader);
         when(soapHeaderElementSecurity.getSource()).thenReturn(sourceSecurity);
-        
+
         when(unmarshaller.unmarshal(sourceSecurity)).thenReturn(security);
 
         when(protectedTargetMock.publicHitMe(soapHeader)).thenReturn("HIT");
-        
-        assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
-        
-        verify(protectedTargetMock).publicHitMe(soapHeader);    	
+
+        assertThrows(SOSIException.class, () -> {
+            protectedTargetProxy.publicHitMe(soapHeader);
+        });
     }
 
     @Test
@@ -277,7 +281,7 @@ public class DgwsProtectionAspectTest {
         assertEquals("HIT", protectedTargetProxy.publicHitMe(soapHeader));
 
         verify(protectedTargetMock).publicHitMe(soapHeader);
-        verifyZeroInteractions(medcomRetransmissionRegister);
+        verifyNoInteractions(medcomRetransmissionRegister);
     }
 
     private Header createMedcomHeader(String messageID) {

@@ -93,4 +93,8 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 		factory = new SOSIFactory(federation, vault, props);
 	}
 
+	@Override
+	public void afterCompletion(MessageContext messageContext, Exception ex) throws WebServiceClientException {
+	}
+
 }

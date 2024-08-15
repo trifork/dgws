@@ -1,6 +1,5 @@
 package com.trifork.dgws;
 
-import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 import org.apache.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
@@ -16,7 +15,7 @@ public class SecurityCheckerImpl implements SecurityChecker {
     DgwsRequestContext dgwsRequestContext;
 
     public void validateHeader(String whitelist, int minAuthLevel, Security securityHeader) {
-        if (isNotEmpty(whitelist)) {
+        if (whitelist != null && whitelist.trim().length() > 0) {
         	IdCardData idCardData = dgwsRequestContext.getIdCardData();
         	IdCardSystemLog systemLog = dgwsRequestContext.getIdCardSystemLog();
         	if(systemLog.getCareProviderIdType() != CareProviderIdType.CVR_NUMBER) {
