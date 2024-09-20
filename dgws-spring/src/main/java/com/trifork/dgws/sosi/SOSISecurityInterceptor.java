@@ -2,34 +2,36 @@ package com.trifork.dgws.sosi;
 
 import static com.trifork.dgws.sosi.SOSIFaultCode.expired_idcard;
 import static com.trifork.dgws.sosi.SOSIFaultCode.invalid_signature;
-import static com.trifork.dgws.sosi.SOSIFaultCode.missing_required_header;
 import static com.trifork.dgws.sosi.SOSIFaultCode.security_level_failed;
 import static com.trifork.dgws.sosi.SOSIFaultCode.syntax_error;
 
-import java.io.StringWriter;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.UUID;
 
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.ws.WebServiceMessage;
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.server.EndpointInterceptor;
 import org.springframework.ws.server.endpoint.MethodEndpoint;
 import org.springframework.ws.soap.SoapFault;
 import org.springframework.ws.soap.SoapFaultDetailElement;
 import org.springframework.ws.soap.SoapHeader;
+import org.springframework.ws.soap.SoapHeaderElement;
 import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.transport.context.TransportContext;
 import org.springframework.ws.transport.context.TransportContextHolder;
@@ -37,26 +39,13 @@ import org.springframework.ws.transport.http.HttpServletConnection;
 import org.springframework.xml.transform.TransformerObjectSupport;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import dk.sosi.seal.SOSIFactory;
-import dk.sosi.seal.model.IDCard;
-import dk.sosi.seal.model.ModelException;
-import dk.sosi.seal.model.Reply;
-import dk.sosi.seal.model.Request;
-import dk.sosi.seal.model.RequestHeader;
-import dk.sosi.seal.model.SignatureUtil;
-import dk.sosi.seal.model.SystemIDCard;
-import dk.sosi.seal.model.constants.DGWSConstants;
-import dk.sosi.seal.model.constants.FlowStatusValues;
-import dk.sosi.seal.modelbuilders.ModelBuildException;
-import dk.sosi.seal.modelbuilders.SignatureInvalidModelBuildException;
-import dk.sosi.seal.pki.SOSIFederation;
-import dk.sosi.seal.pki.SOSITestFederation;
-import dk.sosi.seal.vault.ClasspathCredentialVault;
-import dk.sosi.seal.vault.CredentialVault;
-import dk.sosi.seal.vault.EmptyCredentialVault;
-import dk.sosi.seal.xml.XmlUtilException;
+import com.trifork.unsealed.IdCard;
+import com.trifork.unsealed.IdCardBuilder;
+import com.trifork.unsealed.NsPrefixes;
+import com.trifork.unsealed.ValidationException;
+import com.trifork.unsealed.XmlUtil;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -69,105 +58,104 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	public static final String SOSI_FACTORY = "sosi_factory";
 	public static final String FLOW_ID = "sosi_flow";
 	public static final String SOSI_METHOD_SKIPPED = "sosi_method_skipped";
+	public static final String DGWS_NS = "http://www.medcom.dk/dgws/2006/04/dgws-1.0.xsd";
+	public static final String DGWS_PREFIX = "medcom";
+	public static final String FLOW_FINALIZED_SUCCESFULLY = "flow_finalized_succesfully";
 
-	private final Properties props = SignatureUtil.setupCryptoProviderForJVM();
-	private SOSIFactory factory;
+	private static final String IDCARD_XPATH = "/" + NsPrefixes.soap.name() + ":Header/" + NsPrefixes.wsse.name() + ":Security/"
+			+ NsPrefixes.saml.name() + ":Assertion";
+
+	private static final String MESSAGE_ID_XPATH = "/" + NsPrefixes.soap.name() + ":Header/" + DGWS_PREFIX + ":Header/" + DGWS_PREFIX
+			+ ":Linking/" + DGWS_PREFIX + ":MessageID";
+
+	private static final Map<String, String> EXTRA_PREFIX_MAPPINGS = Map.of(
+			"dgws", DGWS_NS);;
+
 	private boolean isProduction = true;
-	private static final Logger logger = Logger.getLogger(SOSISecurityInterceptor.class);
+	private static final Logger logger = LogManager.getLogger(SOSISecurityInterceptor.class);
 	private List<String> skipMethods = new ArrayList<String>();
 	private boolean canSkip = false;
 	private com.trifork.dgws.sosi.SOSISecurityInterceptor.MyTransformerFactory transformerFactory;
-	
-	public SOSIFactory getFactory() {
-		if (factory == null) {
-			// Setup SOSI factory
-			if (isProduction) {
-				SOSIFederation federation = new SOSIFederation(props);
-				factory = new SOSIFactory(federation, new EmptyCredentialVault(), props);
-			} else {
-				CredentialVault cv = new ClasspathCredentialVault(props, "sts.keystore", "Test1234");
-				SOSITestFederation federation = new SOSITestFederation(props);
-				factory = new SOSIFactory(federation, cv, props);
-			}
-		}
-		return factory;
-	}
-	
-	public boolean handleRequest(MessageContext ctx, Object arg1) throws Exception {
+
+	public boolean handleRequest(MessageContext ctx, Object endpoint) throws Exception {
 		SOSIContext.setCard(null);
 
-		String headerStr = sourceToString(getSource(ctx.getRequest()));
 		try {
-			RequestHeader requestHeader = getFactory().deserializeRequestHeader(headerStr);
-			IDCard idc = requestHeader.getIDCard();
-	
-			Date now = new Date();
-			
-			if (!idc.isValidInTime()) {
-				logger.error("ID card is not valid in time. " + idc.getExpiryDate() + ": " + idc.getCreatedDate() + ". My date: " + now + ", request: " + requestHeader.getCreationDate());
-				throw new SOSIException(expired_idcard, "ID card is not valid in time. Timestamp: " + idc.getExpiryDate());
+			SoapMessage soapMessage = (SoapMessage) ctx.getRequest();
+			SoapHeader soapHeader = soapMessage.getSoapHeader();
+
+			Source source = soapHeader.getSource();
+
+			DOMResult domResult = new DOMResult();
+
+			// Use a Transformer to convert the Source to a DOMResult
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			transformer.transform(source, domResult);
+
+			XPathContext xPathContext = new XPathContext((Document) domResult.getNode(), EXTRA_PREFIX_MAPPINGS);
+
+			Element samlAssertion = xPathContext.findElement(IDCARD_XPATH);
+			Element messageIdElement = xPathContext.findElement(MESSAGE_ID_XPATH);
+			String messageId = messageIdElement.getTextContent();
+
+			IdCard idCard = new IdCardBuilder().assertion(samlAssertion).buildIdCard();
+
+			idCard.validate();
+
+			logger.debug("Received SOSI request: " + messageId);
+
+			if (idCard.getAuthLevel() < 3) {
+				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + idCard.getAuthLevel());
 			}
-			SystemIDCard card = (SystemIDCard) idc;
-			logger.debug("Received SOSI request: " + requestHeader.getMessageID());
-			
-			if (card.getAuthenticationLevel() == null || card.getAuthenticationLevel().getLevel() < 3) {
-				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + card.getAuthenticationLevel());
-			}
-			logger.debug("SOSI idcard: Level " + card.getAuthenticationLevel().getLevel() + ", System: " + card.getSystemInfo().getITSystemName() + ", User: " + card.getSignedByCertificate().getSubjectDN());
-	
+			logger.debug("SOSI idcard: Level " + idCard.getAuthLevel() + ", System: " + idCard.getItSystemName() + ", User: "
+					+ idCard.getSubjectName());
+
 			// Log if request is not DGWS 1.0.1
-			if (!DGWSConstants.VERSION_1_0_1.equals(requestHeader.getDGWSVersion())) {
-				logger.warn("DGWS version was not "+DGWSConstants.VERSION_1_0_1+", but "+requestHeader.getDGWSVersion());
+			if (!"1.0.1".equals(idCard.getDGWSVersion())) {
+				logger.warn("DGWS version was not 1.0.1, but " + idCard.getDGWSVersion());
 			}
 
-			SOSIContext.setCard(card);
-			SOSIContext.setMessageId(requestHeader.getMessageID());
-			
-			ctx.setProperty(FLOW_ID, requestHeader.getFlowID());
-			ctx.setProperty(SOSI_FACTORY, getFactory());
-			
-		} catch (SignatureInvalidModelBuildException e) {
-			logger.error("Invalid signature received from " + getRemote(), e);
+			SOSIContext.setCard(idCard);
+			SOSIContext.setMessageId(messageId);
+
+			// ctx.setProperty(FLOW_ID, requestHeader.getFlowID());
+
+		} catch (ValidationException e) {
+			logger.error("Invalid idcard received from " + getRemote(), e);
 			if (canSkip && !isProduction) {
-				logger.info("Skipping SOSI processing because of SignatureInvalidModelBuildException");
+				logger.info("Skipping SOSI processing because of ValidationException");
 				return true;
 			}
-			throw new SOSIException(invalid_signature, e);
-		} catch (ModelBuildException e) {
-			if (canSkip && !isProduction) {
-				logger.info("Skipping SOSI processing because of ModelBuildException.");
-				return true;
-			}
-			logger.error("Unable to process SOSI ID card", e);
-			throw new SOSIException(syntax_error, e);
-		} catch (XmlUtilException e) {
-			String operationName = getOperation(arg1);
+
+			String operationName = getOperation(endpoint);
 			if (skipMethods.contains(operationName)) {
-				logger.info("Skipping SOSI processing because the call is "+operationName);
+				logger.info("Skipping SOSI processing because the call is " + operationName);
 				ctx.setProperty(SOSI_METHOD_SKIPPED, true);
 				return true;
 			}
-			if (canSkip && !isProduction) {
-				logger.info("Skipping SOSI processing due to configuration: canSkipSosi=true and isProduction=false: " + e.getMessage());
-				return true;
-			}
-			if (!hasIDCard(headerStr)) {
-				logger.debug("Header has no IDCard", e);
-				throw new SOSIException(missing_required_header, e);
-			}
-	
-			logger.error("Unable to parse SOSI xml: " + e.getMessage(), e);
-			throw new SOSIException(syntax_error, e);
-		} catch (ModelException e) {
-			logger.error("Unable to process SOSI ID card: " + e.getMessage(), e);
-			if (canSkip && !isProduction) {
-				logger.info("Skipping SOSI processing because of ModelBuildException.");
-				return true;
-			}
-			throw new SOSIException(syntax_error, e);
+
+			throw new SOSIException(translateValidationException(e.getMessage()), e);
 		}
-		
+
 		return true;
+	}
+
+	private SOSIFaultCode translateValidationException(String message) {
+		if (message.toLowerCase().indexOf("signature") >= 0) {
+			return invalid_signature;
+		}
+		if (message.toLowerCase().indexOf("not yet") >= 0) {
+			return expired_idcard;
+		}
+		if (message.toLowerCase().indexOf("no longer") >= 0) {
+			return expired_idcard;
+		}
+		if (message.toLowerCase().indexOf("syntax") >= 0) {
+			return syntax_error;
+		}
+
+		return syntax_error;
 	}
 
 	private String getOperation(Object ep) {
@@ -183,52 +171,58 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return handleResponse(ctx, arg1);
 	}
 
-
 	public boolean handleResponse(MessageContext ctx, Object arg1) throws Exception {
+		String inResponseToMessageId = SOSIContext.getMessageId();
+
 		SOSIContext.setCard(null);
 		SOSIContext.setMessageId(null);
-		
-		if (!ctx.hasResponse()) return true;
 
-		SoapMessage msg = (SoapMessage) ctx.getResponse();
+		if (!ctx.hasResponse())
+			return true;
+
+		SoapMessage soapMessage = (SoapMessage) ctx.getResponse();
+		SoapHeader soapHeader = soapMessage.getSoapHeader();
 
 		try {
-			Request request = factory.deserializeRequest(sourceToString(getSource(ctx.getRequest())));
-			Reply reply;
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setNamespaceAware(true); // Important for SOAP messages
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document doc = builder.newDocument();
 
-			if (msg.hasFault()) {
-				SoapFault fault = msg.getSoapBody().getFault();
-				String faultCode = "Not defined - probably a validation error";
-				if (fault != null) {
-					if (fault.getFaultDetail() != null && fault.getFaultDetail().getDetailEntries().hasNext()) {
-						SoapFaultDetailElement detail = (SoapFaultDetailElement) fault.getFaultDetail().getDetailEntries().next();
-						faultCode = sourceToString(detail.getSource());
-					} else {
-						logger.error("fault.getDetail() or fault.getDetail().getFirstElement() returned null");
-					}
-				} else {
-					logger.error("mc.getEnvelope().getBody().getFault() returned null");
-				}
-				reply = factory.createNewErrorReply(request, faultCode, fault.getFaultStringOrReason());
-			} else {
-				reply = factory.createNewReply(request, FlowStatusValues.FLOW_FINALIZED_SUCCESFULLY);
+			// Create wsse:Security header with Created timestamp
+			SoapHeaderElement securityHeaderElement = soapHeader.addHeaderElement(new QName(NsPrefixes.wsse.namespaceUri, "Security", "wsse"));
+			Element timestampElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Timestamp");
+			Element createdElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Created");
+			createdElement.setTextContent(XmlUtil.ISO_WITHOUT_MILLIS_FORMATTER.format(Instant.now()));
+			timestampElement.appendChild(createdElement);
+
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			transformer.transform(new DOMSource(timestampElement), securityHeaderElement.getResult());
+
+			// Create medcom:Header header
+			SoapHeaderElement medcomHeaderElement = soapHeader.addHeaderElement(new QName(DGWS_NS, "Header", "medcom"));
+			Element securityLevelElement = doc.createElementNS(DGWS_NS, "medcom:SecurityLevel");
+			securityLevelElement.setTextContent("1");
+
+			Element linkingElement = doc.createElementNS(DGWS_NS, "medcom:Linking");
+			Element messageIdElement = doc.createElementNS(DGWS_NS, "medcom:MessageID");
+			messageIdElement.setTextContent(UUID.randomUUID().toString());
+			linkingElement.appendChild(messageIdElement);
+			Element inResponseToMessageIdElement = doc.createElementNS(DGWS_NS, "medcom:InResponseToMessageID");
+			inResponseToMessageIdElement.setTextContent(inResponseToMessageId);
+			linkingElement.appendChild(inResponseToMessageIdElement);
+			
+			
+			if (!soapMessage.hasFault()) {
+				Element flowStatusElement = doc.createElementNS(DGWS_NS, "medcom:FlowStatus");
+				flowStatusElement.setTextContent("flow_finalized_succesfully");
+				transformer.transform(new DOMSource(flowStatusElement), medcomHeaderElement.getResult());
 			}
 
-			Document doc = reply.serialize2DOMDocument();
-			Element header = (Element) doc.getElementsByTagNameNS("*", "Header").item(0);
-			NodeList headers = header.getChildNodes();
-			SoapHeader sh = msg.getSoapHeader();
+			transformer.transform(new DOMSource(securityLevelElement), medcomHeaderElement.getResult());
+			transformer.transform(new DOMSource(linkingElement), medcomHeaderElement.getResult());
 
-			Transformer trans = TransformerFactory.newInstance().newTransformer();
-			for (int i = 0; i < headers.getLength(); i++) {
-				if (!(headers.item(i) instanceof Element)) continue;
-				Element h = (Element) headers.item(i);
-				trans.transform(new DOMSource(h), sh.getResult());
-			}
-
-			if (msg.hasFault()) {
-
-			}
 		} catch (Exception e) {
 			if (canSkip && !isProduction) {
 				logger.warn("Got exception while processing SOSI response: " + e + ", continuing because CanSkipSosi=true and isProduction=false");
@@ -238,26 +232,26 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 
 		return true;
 	}
-	
+
 	public void setProduction(boolean isProduction) {
 		this.isProduction = isProduction;
 	}
-	
+
 	public void setSkipMethods(List<String> skipMethods) {
 		this.skipMethods = skipMethods;
 	}
-	
+
 	public void setCanSkipSosi(boolean canSkip) {
 		this.canSkip = canSkip;
 	}
 
 	private String getRemote() {
 		TransportContext context = TransportContextHolder.getTransportContext();
-		HttpServletConnection connection = (HttpServletConnection )context.getConnection();
+		HttpServletConnection connection = (HttpServletConnection) context.getConnection();
 		HttpServletRequest request = connection.getHttpServletRequest();
 		return request.getRemoteAddr();
 	}
-	
+
 	private boolean hasIDCard(String headerStr) {
 		// Note: this is just an indication whether the request contains an ID Card or not.
 		// A better way would be to call a method on RequestHeader, eg hasIDCard(), but that
@@ -265,28 +259,10 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return headerStr.contains("saml:Assertion");
 	}
 
-	private Source getSource(WebServiceMessage message) {
-		if (message instanceof SoapMessage) {
-			SoapMessage soapMessage = (SoapMessage) message;
-			return soapMessage.getEnvelope().getSource();
-		} else {
-			return null;
-		}
-	}
-
-	public String sourceToString(Source source) throws TransformerException {
-		if (source == null) {
-			throw new NullPointerException("source cannot be null");
-		}
-		Transformer transformer = transformerFactory.createNonIndentingTransformer();
-		StringWriter writer = new StringWriter();
-		transformer.transform(source, new StreamResult(writer));
-		return writer.toString();
-	}
-
 	public void afterPropertiesSet() throws Exception {
 		transformerFactory = new MyTransformerFactory();
 	}
+
 	private static class MyTransformerFactory extends TransformerObjectSupport {
 		public Transformer createNonIndentingTransformer() throws TransformerConfigurationException {
 			Transformer transformer = getTransformerFactory().newTransformer();
@@ -296,6 +272,6 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		}
 	}
 
-    public void afterCompletion(MessageContext messageContext, Object endpoint, Exception ex) throws Exception {
-    }
+	public void afterCompletion(MessageContext messageContext, Object endpoint, Exception ex) throws Exception {
+	}
 }

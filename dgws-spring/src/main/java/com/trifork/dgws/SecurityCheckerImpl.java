@@ -1,12 +1,13 @@
 package com.trifork.dgws;
 
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class SecurityCheckerImpl implements SecurityChecker {
-    private static Logger logger = Logger.getLogger(SecurityCheckerImpl.class);
+    private static Logger logger = LogManager.getLogger(SecurityCheckerImpl.class);
 
     @Autowired(required = false)
     WhitelistChecker whitelistChecker;

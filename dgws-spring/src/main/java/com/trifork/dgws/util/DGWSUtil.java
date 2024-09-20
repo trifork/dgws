@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.oxm.Unmarshaller;
 
-import org.apache.log4j.Logger;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 
@@ -14,7 +15,7 @@ import javax.xml.namespace.QName;
 
 public class DGWSUtil {
     
-    private static Logger logger = Logger.getLogger(DGWSUtil.class);
+    private static Logger logger = LogManager.getLogger(DGWSUtil.class);
     
     public static List<Object> unmarshalHeaderElements(SoapHeader soapHeader, Unmarshaller unmarshaller) throws Exception {
         List<Object> result = new ArrayList<Object>();

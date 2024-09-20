@@ -4,7 +4,7 @@ import static org.springframework.util.CollectionUtils.findValueOfType;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -25,7 +25,7 @@ import dk.medcom.dgws._2006._04.dgws_1_0.Header;
 
 @Aspect
 public class DgwsProtectionAspect {
-    private static final Logger logger = Logger.getLogger(DgwsProtectionAspect.class);
+    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(DgwsProtectionAspect.class);
 
     @SuppressWarnings("SpringJavaAutowiringInspection should be wired by user")
     @Autowired

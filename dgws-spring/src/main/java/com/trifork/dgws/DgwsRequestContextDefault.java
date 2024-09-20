@@ -9,7 +9,8 @@ import java.util.Map;
 import oasis.names.tc.saml._2_0.assertion.Attribute;
 import oasis.names.tc.saml._2_0.assertion.AttributeStatement;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.Unmarshaller;
@@ -20,10 +21,8 @@ import org.springframework.ws.soap.SoapMessage;
 
 import com.trifork.dgws.util.DGWSUtil;
 
-import dk.sosi.seal.model.constants.SubjectIdentifierTypeValues;
-
 public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointInterceptor {
-    private static Logger logger = Logger.getLogger(DgwsRequestContextDefault.class);
+    private static Logger logger = LogManager.getLogger(DgwsRequestContextDefault.class);
     ThreadLocal<Security> securityThreadLocal = new ThreadLocal<Security>();
     @Autowired
     Unmarshaller unmarshaller;
@@ -31,10 +30,10 @@ public class DgwsRequestContextDefault implements DgwsRequestContext, EndpointIn
     @SuppressWarnings("serial")
     private static final Map<String, CareProviderIdType> careProviderNameFormatMap = new HashMap<String, CareProviderIdType>() {
         {
-            put(SubjectIdentifierTypeValues.CVR_NUMBER, CareProviderIdType.CVR_NUMBER);
-            put(SubjectIdentifierTypeValues.P_NUMBER, CareProviderIdType.P_NUMBER);
-            put(SubjectIdentifierTypeValues.Y_NUMBER, CareProviderIdType.Y_NUMBER);
-            put(SubjectIdentifierTypeValues.SKS_CODE, CareProviderIdType.SKS_CODE);
+            put("medcom:cvrnumber", CareProviderIdType.CVR_NUMBER);
+            put("medcom:pnumber", CareProviderIdType.P_NUMBER);
+            put("medcom:ynumber", CareProviderIdType.Y_NUMBER);
+            put("medcom:skscode", CareProviderIdType.SKS_CODE);
         }
     };
 

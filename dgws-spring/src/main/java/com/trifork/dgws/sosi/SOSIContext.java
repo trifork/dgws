@@ -1,13 +1,13 @@
 package com.trifork.dgws.sosi;
 
-import dk.sosi.seal.model.IDCard;
+import com.trifork.unsealed.IdCard;
 
 public class SOSIContext {
 	
-	private static final ThreadLocal<IDCard> card = new ThreadLocal<IDCard>();
+	private static final ThreadLocal<IdCard> card = new ThreadLocal<IdCard>();
 	private static final ThreadLocal<String> messageId = new ThreadLocal<String>();
 	
-	public static IDCard getCard() {
+	public static IdCard getCard() {
 		return card.get();
 	}
 	
@@ -15,7 +15,7 @@ public class SOSIContext {
 		return messageId.get();
 	}
 
-	public static void setCard(IDCard card) {
+	public static void setCard(IdCard card) {
 		SOSIContext.card.set(card);
 	}
 
