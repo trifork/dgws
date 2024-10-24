@@ -41,7 +41,7 @@ public class SecurityHelperImpl implements SecurityHelper {
     }
 
     public Security extractSecurity(SoapHeader soapHeader) {
-        List elements = new ArrayList();
+        List<Object> elements = new ArrayList<>();
         Iterator<SoapHeaderElement> it = soapHeader.examineAllHeaderElements();
         try {
             while (it.hasNext()) {

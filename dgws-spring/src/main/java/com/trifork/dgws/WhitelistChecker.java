@@ -1,7 +1,5 @@
 package com.trifork.dgws;
 
-import java.util.Set;
-
 public interface WhitelistChecker {
 	/**
 	 * Checks whether a user is whitelisted. cpr may be null, indicating that no cpr number was provided in the certificate.

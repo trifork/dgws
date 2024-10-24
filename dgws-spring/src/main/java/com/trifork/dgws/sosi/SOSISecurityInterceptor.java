@@ -14,10 +14,8 @@ import java.util.UUID;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
@@ -28,15 +26,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.server.EndpointInterceptor;
 import org.springframework.ws.server.endpoint.MethodEndpoint;
-import org.springframework.ws.soap.SoapFault;
-import org.springframework.ws.soap.SoapFaultDetailElement;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapHeaderElement;
 import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.transport.context.TransportContext;
 import org.springframework.ws.transport.context.TransportContextHolder;
 import org.springframework.ws.transport.http.HttpServletConnection;
-import org.springframework.xml.transform.TransformerObjectSupport;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -75,7 +70,6 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	private static final Logger logger = LogManager.getLogger(SOSISecurityInterceptor.class);
 	private List<String> skipMethods = new ArrayList<String>();
 	private boolean canSkip = false;
-	private com.trifork.dgws.sosi.SOSISecurityInterceptor.MyTransformerFactory transformerFactory;
 
 	public boolean handleRequest(MessageContext ctx, Object endpoint) throws Exception {
 		SOSIContext.setCard(null);
@@ -252,24 +246,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return request.getRemoteAddr();
 	}
 
-	private boolean hasIDCard(String headerStr) {
-		// Note: this is just an indication whether the request contains an ID Card or not.
-		// A better way would be to call a method on RequestHeader, eg hasIDCard(), but that
-		// method does not exist.
-		return headerStr.contains("saml:Assertion");
-	}
-
 	public void afterPropertiesSet() throws Exception {
-		transformerFactory = new MyTransformerFactory();
-	}
-
-	private static class MyTransformerFactory extends TransformerObjectSupport {
-		public Transformer createNonIndentingTransformer() throws TransformerConfigurationException {
-			Transformer transformer = getTransformerFactory().newTransformer();
-			transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-			transformer.setOutputProperty(OutputKeys.INDENT, "no");
-			return transformer;
-		}
 	}
 
 	public void afterCompletion(MessageContext messageContext, Object endpoint, Exception ex) throws Exception {
