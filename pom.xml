@@ -3,7 +3,7 @@
 
     <groupId>com.trifork.dgws</groupId>
     <artifactId>dgws</artifactId>
-    <version>3.1.1</version>
+    <version>3.1.2-SNAPSHOT</version>
     <modules>
         <module>dgws-spring</module>
     </modules>
@@ -18,7 +18,7 @@
         <connection>scm:git:git@github.com:trifork/dgws.git</connection>
         <url>scm:git:git@github.com:trifork/dgws.git</url>
         <developerConnection>scm:git:git@github.com:trifork/dgws.git</developerConnection>
-      <tag>dgws-3.1.1</tag>
+      <tag>dgws-3.1.0</tag>
   </scm>
 
 
