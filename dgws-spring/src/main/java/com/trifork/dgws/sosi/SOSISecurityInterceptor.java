@@ -95,17 +95,27 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			Element messageIdElement = xPathContext.findElement(MESSAGE_ID_XPATH);
 			String messageId = messageIdElement.getTextContent();
 
-			IDCard idCard = IDCard.from(samlAssertion);
+			IDCard idCard;
+			try {
+				idCard = IDCard.from(samlAssertion);
+			} catch (ModelBuildException | ModelException e) {
+				throw new SOSIException(syntax_error, e);
+			}
 
 			if (!idCard.isValidInTime()) {
 				throw new SOSIException(expired_idcard, "IDCard is not valid in time");
 			}
-			idCard.validateSignature();
 
 			logger.debug("Received SOSI request: " + messageId);
 
 			if (idCard.getAuthenticationLevel().getLevel() < 3) {
 				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + idCard.getAuthenticationLevel().getLevel());
+			}
+
+			try {
+				idCard.validateSignature();
+			} catch (ModelException e) {
+				throw new SOSIException(invalid_signature, e);
 			}
 
 			SystemIDCard systemIdCard = (SystemIDCard) idCard;
@@ -124,35 +134,24 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 
 			// ctx.setProperty(FLOW_ID, requestHeader.getFlowID());
 
-		} catch (SOSIException e) {
-			if (skipInvalidIdCard(ctx, endpoint, e)) return true;
-			throw e;
-		} catch (ModelBuildException e) {
-			if (skipInvalidIdCard(ctx, endpoint, e)) return true;
-			throw new SOSIException(syntax_error, e);
-		} catch (ModelException e) {
-			if (skipInvalidIdCard(ctx, endpoint, e)) return true;
-			throw new SOSIException(invalid_signature, e);
-		}
+			} catch (SOSIException e) {
+				logger.error("Invalid idcard received from " + getRemote(), e);
+				if (canSkip && !isProduction) {
+					logger.info("Skipping SOSI processing because of invalid IDCard");
+					return true;
+				}
+
+				String operationName = getOperation(endpoint);
+				if (skipMethods.contains(operationName)) {
+					logger.info("Skipping SOSI processing because the call is " + operationName);
+					ctx.setProperty(SOSI_METHOD_SKIPPED, true);
+					return true;
+				}
+
+				throw e;
+			}
 
 		return true;
-	}
-
-	private boolean skipInvalidIdCard(MessageContext ctx, Object endpoint, Exception e) {
-		logger.error("Invalid idcard received from " + getRemote(), e);
-		if (canSkip && !isProduction) {
-			logger.info("Skipping SOSI processing because of invalid IDCard");
-			return true;
-		}
-
-		String operationName = getOperation(endpoint);
-		if (skipMethods.contains(operationName)) {
-			logger.info("Skipping SOSI processing because the call is " + operationName);
-			ctx.setProperty(SOSI_METHOD_SKIPPED, true);
-			return true;
-		}
-
-		return false;
 	}
 
 	private String getOperation(Object ep) {
