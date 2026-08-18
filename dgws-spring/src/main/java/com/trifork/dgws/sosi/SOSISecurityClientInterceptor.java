@@ -12,7 +12,6 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 
-import dk.sosi.seal.SOSIFactory;
 import dk.sosi.seal.model.IDCard;
 import dk.sosi.seal.model.constants.NameSpaces;
 import dk.sosi.seal.xml.XmlUtil;
@@ -81,7 +80,7 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 
 			transformer.transform(new DOMSource(timestampElement), securityHeaderElement.getResult());
 
-			transformer.transform(new DOMSource(idCard.serialize2DOMDocument((SOSIFactory) ctx.getProperty(SOSISecurityInterceptor.SOSI_FACTORY), doc)), securityHeaderElement.getResult());
+			transformer.transform(new DOMSource(idCard.serialize2DOMDocument(null, doc)), securityHeaderElement.getResult());
 
 			// Create medcom:Header header
 			SoapHeaderElement medcomHeaderElement = soapHeader.addHeaderElement(new QName(DGWS_NS, "Header", "medcom"));

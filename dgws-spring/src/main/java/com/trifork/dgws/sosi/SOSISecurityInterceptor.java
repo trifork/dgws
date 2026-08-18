@@ -75,6 +75,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 
 	public boolean handleRequest(MessageContext ctx, Object endpoint) throws Exception {
 		SOSIContext.setCard(null);
+		SOSIContext.setMessageId(null);
 
 		try {
 			SoapMessage soapMessage = (SoapMessage) ctx.getRequest();
