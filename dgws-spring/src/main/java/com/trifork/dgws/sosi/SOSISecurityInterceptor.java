@@ -2,6 +2,7 @@ package com.trifork.dgws.sosi;
 
 import static com.trifork.dgws.sosi.SOSIFaultCode.expired_idcard;
 import static com.trifork.dgws.sosi.SOSIFaultCode.invalid_signature;
+import static com.trifork.dgws.sosi.SOSIFaultCode.missing_required_header;
 import static com.trifork.dgws.sosi.SOSIFaultCode.security_level_failed;
 import static com.trifork.dgws.sosi.SOSIFaultCode.syntax_error;
 
@@ -15,6 +16,7 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
@@ -52,8 +54,6 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  */
 public class SOSISecurityInterceptor implements EndpointInterceptor, InitializingBean {
-	public static final String SOSI_FACTORY = "sosi_factory";
-	public static final String FLOW_ID = "sosi_flow";
 	public static final String SOSI_METHOD_SKIPPED = "sosi_method_skipped";
 	public static final String DGWS_NS = "http://www.medcom.dk/dgws/2006/04/dgws-1.0.xsd";
 	public static final String DGWS_PREFIX = "medcom";
@@ -68,6 +68,8 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	private static final Map<String, String> EXTRA_PREFIX_MAPPINGS = Map.of(
 			"dgws", DGWS_NS);;
 
+	private static final int MINIMUM_AUTHENTICATION_LEVEL = 3;
+
 	private boolean isProduction = true;
 	private static final Logger logger = LogManager.getLogger(SOSISecurityInterceptor.class);
 	private List<String> skipMethods = new ArrayList<String>();
@@ -77,82 +79,92 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		SOSIContext.setCard(null);
 		SOSIContext.setMessageId(null);
 
+		XPathContext xPathContext = headerContext(ctx);
+		Element samlAssertion = xPathContext.findElement(IDCARD_XPATH);
+		Element messageIdElement = xPathContext.findElement(MESSAGE_ID_XPATH);
+		if (samlAssertion == null || messageIdElement == null) {
+			throw new SOSIException(missing_required_header, "Missing SOSI IDCard or MessageID");
+		}
+		String messageId = messageIdElement.getTextContent();
+
+		IDCard idCard;
 		try {
-			SoapMessage soapMessage = (SoapMessage) ctx.getRequest();
-			SoapHeader soapHeader = soapMessage.getSoapHeader();
-
-			Source source = soapHeader.getSource();
-
-			DOMResult domResult = new DOMResult();
-
-			// Use a Transformer to convert the Source to a DOMResult
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			transformer.transform(source, domResult);
-
-			XPathContext xPathContext = new XPathContext((Document) domResult.getNode(), EXTRA_PREFIX_MAPPINGS);
-
-			Element samlAssertion = xPathContext.findElement(IDCARD_XPATH);
-			Element messageIdElement = xPathContext.findElement(MESSAGE_ID_XPATH);
-			String messageId = messageIdElement.getTextContent();
-
-			IDCard idCard;
-			try {
-				idCard = IDCard.from(samlAssertion);
-			} catch (ModelBuildException | ModelException e) {
-				throw new SOSIException(syntax_error, e);
+			idCard = parseAndValidate(samlAssertion);
+		} catch (SOSIException e) {
+			logger.error("Invalid idcard received from " + getRemote(), e);
+			if (shouldSkip(ctx, endpoint)) {
+				return true;
 			}
+			throw e;
+		}
 
-			if (!idCard.isValidInTime()) {
-				throw new SOSIException(expired_idcard, "IDCard is not valid in time");
-			}
+		logger.debug("Received SOSI request: " + messageId);
+		requireMinimumAuthenticationLevel(idCard);
+		logIdCard(idCard);
 
-			logger.debug("Received SOSI request: " + messageId);
-
-			if (idCard.getAuthenticationLevel().getLevel() < 3) {
-				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + idCard.getAuthenticationLevel().getLevel());
-			}
-
-			try {
-				idCard.validateSignature();
-			} catch (ModelException e) {
-				throw new SOSIException(invalid_signature, e);
-			}
-
-			SystemIDCard systemIdCard = (SystemIDCard) idCard;
-			UserInfo userInfo = idCard instanceof UserIDCard userIdCard ? userIdCard.getUserInfo() : null;
-			logger.debug("SOSI idcard: Level " + idCard.getAuthenticationLevel().getLevel()
-					+ ", System: " + systemIdCard.getSystemInfo().getITSystemName()
-					+ ", User: " + (userInfo == null ? null : userInfo.getGivenName() + " " + userInfo.getSurName()));
-
-			// Log if request is not DGWS 1.0.1
-			if (!"1.0.1".equals(idCard.getVersion())) {
-				logger.warn("DGWS version was not 1.0.1, but " + idCard.getVersion());
-			}
-
-			SOSIContext.setCard(idCard);
-			SOSIContext.setMessageId(messageId);
-
-			// ctx.setProperty(FLOW_ID, requestHeader.getFlowID());
-
-			} catch (SOSIException e) {
-				logger.error("Invalid idcard received from " + getRemote(), e);
-				if (canSkip && !isProduction) {
-					logger.info("Skipping SOSI processing because of invalid IDCard");
-					return true;
-				}
-
-				String operationName = getOperation(endpoint);
-				if (skipMethods.contains(operationName)) {
-					logger.info("Skipping SOSI processing because the call is " + operationName);
-					ctx.setProperty(SOSI_METHOD_SKIPPED, true);
-					return true;
-				}
-
-				throw e;
-			}
-
+		SOSIContext.setCard(idCard);
+		SOSIContext.setMessageId(messageId);
 		return true;
+	}
+
+	private XPathContext headerContext(MessageContext ctx) throws TransformerException {
+		Source source = ((SoapMessage) ctx.getRequest()).getSoapHeader().getSource();
+		DOMResult domResult = new DOMResult();
+		TransformerFactory.newInstance().newTransformer().transform(source, domResult);
+		return new XPathContext((Document) domResult.getNode(), EXTRA_PREFIX_MAPPINGS);
+	}
+
+	private IDCard parseAndValidate(Element samlAssertion) {
+		IDCard idCard;
+		try {
+			idCard = IDCard.from(samlAssertion);
+		} catch (ModelBuildException | ModelException e) {
+			throw new SOSIException(syntax_error, e);
+		}
+
+		if (!idCard.isValidInTime()) {
+			throw new SOSIException(expired_idcard, "IDCard is not valid in time");
+		}
+
+		try {
+			idCard.validateSignature();
+		} catch (ModelException e) {
+			throw new SOSIException(invalid_signature, e);
+		}
+		return idCard;
+	}
+
+	private void requireMinimumAuthenticationLevel(IDCard idCard) {
+		int level = idCard.getAuthenticationLevel().getLevel();
+		if (level < MINIMUM_AUTHENTICATION_LEVEL) {
+			throw new SOSIException(security_level_failed, "Authentication level " + MINIMUM_AUTHENTICATION_LEVEL + " is required. Current level: " + level);
+		}
+	}
+
+	private boolean shouldSkip(MessageContext ctx, Object endpoint) {
+		if (canSkip && !isProduction) {
+			logger.info("Skipping SOSI processing because of invalid IDCard");
+			return true;
+		}
+
+		String operationName = getOperation(endpoint);
+		if (skipMethods.contains(operationName)) {
+			logger.info("Skipping SOSI processing because the call is " + operationName);
+			ctx.setProperty(SOSI_METHOD_SKIPPED, true);
+			return true;
+		}
+		return false;
+	}
+
+	private void logIdCard(IDCard idCard) {
+		UserInfo userInfo = idCard instanceof UserIDCard userIdCard ? userIdCard.getUserInfo() : null;
+		logger.debug("SOSI idcard: Level " + idCard.getAuthenticationLevel().getLevel()
+				+ ", System: " + ((SystemIDCard) idCard).getSystemInfo().getITSystemName()
+				+ ", User: " + (userInfo == null ? null : userInfo.getGivenName() + " " + userInfo.getSurName()));
+
+		if (!"1.0.1".equals(idCard.getVersion())) {
+			logger.warn("DGWS version was not 1.0.1, but " + idCard.getVersion());
+		}
 	}
 
 	private String getOperation(Object ep) {
@@ -198,22 +210,22 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			transformer.transform(new DOMSource(timestampElement), securityHeaderElement.getResult());
 
 			// Create medcom:Header header
-			SoapHeaderElement medcomHeaderElement = soapHeader.addHeaderElement(new QName(DGWS_NS, "Header", "medcom"));
-			Element securityLevelElement = doc.createElementNS(DGWS_NS, "medcom:SecurityLevel");
+			SoapHeaderElement medcomHeaderElement = soapHeader.addHeaderElement(new QName(DGWS_NS, "Header", DGWS_PREFIX));
+			Element securityLevelElement = doc.createElementNS(DGWS_NS, DGWS_PREFIX + ":SecurityLevel");
 			securityLevelElement.setTextContent("1");
 
-			Element linkingElement = doc.createElementNS(DGWS_NS, "medcom:Linking");
-			Element messageIdElement = doc.createElementNS(DGWS_NS, "medcom:MessageID");
+			Element linkingElement = doc.createElementNS(DGWS_NS, DGWS_PREFIX + ":Linking");
+			Element messageIdElement = doc.createElementNS(DGWS_NS, DGWS_PREFIX + ":MessageID");
 			messageIdElement.setTextContent(UUID.randomUUID().toString());
 			linkingElement.appendChild(messageIdElement);
-			Element inResponseToMessageIdElement = doc.createElementNS(DGWS_NS, "medcom:InResponseToMessageID");
+			Element inResponseToMessageIdElement = doc.createElementNS(DGWS_NS, DGWS_PREFIX + ":InResponseToMessageID");
 			inResponseToMessageIdElement.setTextContent(inResponseToMessageId);
 			linkingElement.appendChild(inResponseToMessageIdElement);
 			
 			
 			if (!soapMessage.hasFault()) {
-				Element flowStatusElement = doc.createElementNS(DGWS_NS, "medcom:FlowStatus");
-				flowStatusElement.setTextContent("flow_finalized_succesfully");
+				Element flowStatusElement = doc.createElementNS(DGWS_NS, DGWS_PREFIX + ":FlowStatus");
+				flowStatusElement.setTextContent(FLOW_FINALIZED_SUCCESFULLY);
 				transformer.transform(new DOMSource(flowStatusElement), medcomHeaderElement.getResult());
 			}
 

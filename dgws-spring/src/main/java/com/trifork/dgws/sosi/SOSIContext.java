@@ -10,7 +10,7 @@ public class SOSIContext {
 	public static IDCard getCard() {
 		return card.get();
 	}
-
+	
 	public static String getMessageId() {
 		return messageId.get();
 	}
