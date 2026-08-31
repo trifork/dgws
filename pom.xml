@@ -8,8 +8,8 @@
         <module>dgws-spring</module>
     </modules>
     <properties>
-        <spring.version>6.1.11</spring.version>
-        <spring-ws.version>4.0.11</spring-ws.version>
+        <spring.version>6.2.19</spring.version>
+        <spring-ws.version>4.1.4</spring-ws.version>
         <log4j.version>2.23.1</log4j.version>
     </properties>
     <packaging>pom</packaging>
