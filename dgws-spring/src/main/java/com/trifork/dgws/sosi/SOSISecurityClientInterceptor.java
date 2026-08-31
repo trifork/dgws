@@ -2,7 +2,7 @@ package com.trifork.dgws.sosi;
 
 import static com.trifork.dgws.sosi.SOSISecurityInterceptor.DGWS_NS;
 
-import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 import javax.xml.namespace.QName;
@@ -12,6 +12,9 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 
+import dk.sosi.seal.model.IDCard;
+import dk.sosi.seal.model.constants.NameSpaces;
+import dk.sosi.seal.xml.XmlUtil;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.ws.client.WebServiceClientException;
 import org.springframework.ws.client.support.interceptor.ClientInterceptor;
@@ -22,15 +25,11 @@ import org.springframework.ws.soap.SoapMessage;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import com.trifork.unsealed.IdCard;
-import com.trifork.unsealed.NsPrefixes;
-import com.trifork.unsealed.XmlUtil;
-
 /**
  * Client support for SOSI.
- * 
+ * <p>
  * This adds a SOSI IDCard to a SOAP request.
- * 
+ * <p>
  * The IDCard must be placed either in {@link SOSIContext} or in the {@link MessageContext}.
  * 
  * @author recht
@@ -47,7 +46,7 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 
 	@SuppressWarnings("serial")
 	public boolean handleRequest(MessageContext ctx) throws WebServiceClientException {
-		IdCard idCard = (IdCard) ctx.getProperty(ID_CARD);
+		IDCard idCard = (IDCard) ctx.getProperty(ID_CARD);
 		if (idCard == null)
 			idCard = SOSIContext.getCard();
 		if (idCard == null)
@@ -72,23 +71,21 @@ public class SOSISecurityClientInterceptor implements ClientInterceptor, Initial
 			Transformer transformer = transformerFactory.newTransformer();
 
 			// Create wsse:Security header with IDCard and Created timestamp
-			SoapHeaderElement securityHeaderElement = soapHeader.addHeaderElement(new QName(NsPrefixes.wsse.namespaceUri, "Security", NsPrefixes.wsse.name()));
+			SoapHeaderElement securityHeaderElement = soapHeader.addHeaderElement(new QName(NameSpaces.WSSE_SCHEMA, "Security", NameSpaces.NS_WSSE));
 			
-			Element timestampElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Timestamp");
-			Element createdElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Created");
-			createdElement.setTextContent(XmlUtil.ISO_WITHOUT_MILLIS_FORMATTER.format(Instant.now()));
+			Element timestampElement = doc.createElementNS(NameSpaces.WSU_SCHEMA, "Timestamp");
+			Element createdElement = doc.createElementNS(NameSpaces.WSU_SCHEMA, "Created");
+			createdElement.setTextContent(XmlUtil.toXMLTimeStamp(new Date(), true));
 			timestampElement.appendChild(createdElement);
 
 			transformer.transform(new DOMSource(timestampElement), securityHeaderElement.getResult());
 
-			if (idCard != null) {
-				transformer.transform(new DOMSource(idCard.getAssertion()), securityHeaderElement.getResult());
-			}
+			transformer.transform(new DOMSource(idCard.serialize2DOMDocument(null, doc)), securityHeaderElement.getResult());
 
 			// Create medcom:Header header
 			SoapHeaderElement medcomHeaderElement = soapHeader.addHeaderElement(new QName(DGWS_NS, "Header", "medcom"));
 			Element securityLevelElement = doc.createElementNS(DGWS_NS, "medcom:SecurityLevel");
-			securityLevelElement.setTextContent(idCard != null ? String.valueOf(idCard.getAuthLevel()) : "1");
+			securityLevelElement.setTextContent(String.valueOf(idCard.getAuthenticationLevel().getLevel()));
 
 			Element linkingElement = doc.createElementNS(DGWS_NS, "medcom:Linking");
 			Element messageIdElement = doc.createElementNS(DGWS_NS, "medcom:MessageID");

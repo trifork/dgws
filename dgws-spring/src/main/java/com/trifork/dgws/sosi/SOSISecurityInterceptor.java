@@ -5,8 +5,8 @@ import static com.trifork.dgws.sosi.SOSIFaultCode.invalid_signature;
 import static com.trifork.dgws.sosi.SOSIFaultCode.security_level_failed;
 import static com.trifork.dgws.sosi.SOSIFaultCode.syntax_error;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,6 +20,14 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 
+import dk.sosi.seal.model.IDCard;
+import dk.sosi.seal.model.ModelException;
+import dk.sosi.seal.model.SystemIDCard;
+import dk.sosi.seal.model.UserIDCard;
+import dk.sosi.seal.model.UserInfo;
+import dk.sosi.seal.model.constants.NameSpaces;
+import dk.sosi.seal.modelbuilders.ModelBuildException;
+import dk.sosi.seal.xml.XmlUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
@@ -35,17 +43,11 @@ import org.springframework.ws.transport.http.HttpServletConnection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import com.trifork.unsealed.IdCard;
-import com.trifork.unsealed.IdCardBuilder;
-import com.trifork.unsealed.NsPrefixes;
-import com.trifork.unsealed.ValidationException;
-import com.trifork.unsealed.XmlUtil;
-
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Handle SOSI level 4 requests.
- * 
+ * <p>
  * Validates that a request contains a correct SOSI IDCard. After validation, the card is placed in {@link SOSIContext} where it can be accessed.
  *
  */
@@ -57,10 +59,10 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	public static final String DGWS_PREFIX = "medcom";
 	public static final String FLOW_FINALIZED_SUCCESFULLY = "flow_finalized_succesfully";
 
-	private static final String IDCARD_XPATH = "/" + NsPrefixes.soap.name() + ":Header/" + NsPrefixes.wsse.name() + ":Security/"
-			+ NsPrefixes.saml.name() + ":Assertion";
+	private static final String IDCARD_XPATH = "/" + NameSpaces.NS_SOAP + ":Header/" + NameSpaces.NS_WSSE + ":Security/"
+			+ NameSpaces.NS_SAML + ":Assertion";
 
-	private static final String MESSAGE_ID_XPATH = "/" + NsPrefixes.soap.name() + ":Header/" + DGWS_PREFIX + ":Header/" + DGWS_PREFIX
+	private static final String MESSAGE_ID_XPATH = "/" + NameSpaces.NS_SOAP + ":Header/" + DGWS_PREFIX + ":Header/" + DGWS_PREFIX
 			+ ":Linking/" + DGWS_PREFIX + ":MessageID";
 
 	private static final Map<String, String> EXTRA_PREFIX_MAPPINGS = Map.of(
@@ -73,6 +75,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 
 	public boolean handleRequest(MessageContext ctx, Object endpoint) throws Exception {
 		SOSIContext.setCard(null);
+		SOSIContext.setMessageId(null);
 
 		try {
 			SoapMessage soapMessage = (SoapMessage) ctx.getRequest();
@@ -93,21 +96,38 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			Element messageIdElement = xPathContext.findElement(MESSAGE_ID_XPATH);
 			String messageId = messageIdElement.getTextContent();
 
-			IdCard idCard = new IdCardBuilder().assertion(samlAssertion).buildIdCard();
+			IDCard idCard;
+			try {
+				idCard = IDCard.from(samlAssertion);
+			} catch (ModelBuildException | ModelException e) {
+				throw new SOSIException(syntax_error, e);
+			}
 
-			idCard.validate();
+			if (!idCard.isValidInTime()) {
+				throw new SOSIException(expired_idcard, "IDCard is not valid in time");
+			}
 
 			logger.debug("Received SOSI request: " + messageId);
 
-			if (idCard.getAuthLevel() < 3) {
-				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + idCard.getAuthLevel());
+			if (idCard.getAuthenticationLevel().getLevel() < 3) {
+				throw new SOSIException(security_level_failed, "Authentication level 3 is required. Current level: " + idCard.getAuthenticationLevel().getLevel());
 			}
-			logger.debug("SOSI idcard: Level " + idCard.getAuthLevel() + ", System: " + idCard.getItSystemName() + ", User: "
-					+ idCard.getSubjectName());
+
+			try {
+				idCard.validateSignature();
+			} catch (ModelException e) {
+				throw new SOSIException(invalid_signature, e);
+			}
+
+			SystemIDCard systemIdCard = (SystemIDCard) idCard;
+			UserInfo userInfo = idCard instanceof UserIDCard userIdCard ? userIdCard.getUserInfo() : null;
+			logger.debug("SOSI idcard: Level " + idCard.getAuthenticationLevel().getLevel()
+					+ ", System: " + systemIdCard.getSystemInfo().getITSystemName()
+					+ ", User: " + (userInfo == null ? null : userInfo.getGivenName() + " " + userInfo.getSurName()));
 
 			// Log if request is not DGWS 1.0.1
-			if (!"1.0.1".equals(idCard.getDGWSVersion())) {
-				logger.warn("DGWS version was not 1.0.1, but " + idCard.getDGWSVersion());
+			if (!"1.0.1".equals(idCard.getVersion())) {
+				logger.warn("DGWS version was not 1.0.1, but " + idCard.getVersion());
 			}
 
 			SOSIContext.setCard(idCard);
@@ -115,41 +135,24 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 
 			// ctx.setProperty(FLOW_ID, requestHeader.getFlowID());
 
-		} catch (ValidationException e) {
-			logger.error("Invalid idcard received from " + getRemote(), e);
-			if (canSkip && !isProduction) {
-				logger.info("Skipping SOSI processing because of ValidationException");
-				return true;
-			}
+			} catch (SOSIException e) {
+				logger.error("Invalid idcard received from " + getRemote(), e);
+				if (canSkip && !isProduction) {
+					logger.info("Skipping SOSI processing because of invalid IDCard");
+					return true;
+				}
 
-			String operationName = getOperation(endpoint);
-			if (skipMethods.contains(operationName)) {
-				logger.info("Skipping SOSI processing because the call is " + operationName);
-				ctx.setProperty(SOSI_METHOD_SKIPPED, true);
-				return true;
-			}
+				String operationName = getOperation(endpoint);
+				if (skipMethods.contains(operationName)) {
+					logger.info("Skipping SOSI processing because the call is " + operationName);
+					ctx.setProperty(SOSI_METHOD_SKIPPED, true);
+					return true;
+				}
 
-			throw new SOSIException(translateValidationException(e.getMessage()), e);
-		}
+				throw e;
+			}
 
 		return true;
-	}
-
-	private SOSIFaultCode translateValidationException(String message) {
-		if (message.toLowerCase().indexOf("signature") >= 0) {
-			return invalid_signature;
-		}
-		if (message.toLowerCase().indexOf("not yet") >= 0) {
-			return expired_idcard;
-		}
-		if (message.toLowerCase().indexOf("no longer") >= 0) {
-			return expired_idcard;
-		}
-		if (message.toLowerCase().indexOf("syntax") >= 0) {
-			return syntax_error;
-		}
-
-		return syntax_error;
 	}
 
 	private String getOperation(Object ep) {
@@ -184,10 +187,10 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 			Document doc = builder.newDocument();
 
 			// Create wsse:Security header with Created timestamp
-			SoapHeaderElement securityHeaderElement = soapHeader.addHeaderElement(new QName(NsPrefixes.wsse.namespaceUri, "Security", "wsse"));
-			Element timestampElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Timestamp");
-			Element createdElement = doc.createElementNS(NsPrefixes.wsu.namespaceUri, "Created");
-			createdElement.setTextContent(XmlUtil.ISO_WITHOUT_MILLIS_FORMATTER.format(Instant.now()));
+			SoapHeaderElement securityHeaderElement = soapHeader.addHeaderElement(new QName(NameSpaces.WSSE_SCHEMA, "Security", NameSpaces.NS_WSSE));
+			Element timestampElement = doc.createElementNS(NameSpaces.WSU_SCHEMA, "Timestamp");
+			Element createdElement = doc.createElementNS(NameSpaces.WSU_SCHEMA, "Created");
+			createdElement.setTextContent(XmlUtil.toXMLTimeStamp(new Date(), true));
 			timestampElement.appendChild(createdElement);
 
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();
