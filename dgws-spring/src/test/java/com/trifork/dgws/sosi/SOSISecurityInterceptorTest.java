@@ -3,18 +3,18 @@ package com.trifork.dgws.sosi;
 import static com.trifork.dgws.sosi.SOSIFaultCode.expired_idcard;
 import static com.trifork.dgws.sosi.SOSIFaultCode.invalid_signature;
 import static com.trifork.dgws.sosi.SOSIFaultCode.missing_required_header;
+import static com.trifork.dgws.sosi.SOSIFaultCode.syntax_error;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +23,9 @@ import java.util.UUID;
 import dk.sosi.seal.model.AuthenticationLevel;
 import dk.sosi.seal.model.SystemIDCard;
 import dk.sosi.seal.model.UserIDCard;
+import dk.sosi.seal.pki.Federation;
+import dk.sosi.seal.pki.SOSIFederation;
+import dk.sosi.seal.pki.SOSITestFederation;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,6 +58,7 @@ class SOSISecurityInterceptorTest {
 	@BeforeEach
 	void setup() {
 		interceptor = new SOSISecurityInterceptor();
+		interceptor.setFederation(support.trustedFederation());
 	}
 
 	@AfterEach
@@ -134,6 +138,63 @@ class SOSISecurityInterceptorTest {
 		SOSIException e = assertThrows(SOSIException.class, () -> handleRequest(idCardXml, "broken-signature"));
 
 		assertEquals(invalid_signature, e.getSOSIFaultCode());
+	}
+
+	@Test
+	void handleRequestRejectsCardSignedByUntrustedCertificate() throws Exception {
+		interceptor.setFederation(support.untrustedFederation());
+
+		SOSIException e = assertThrows(SOSIException.class, () -> handleRequest(support.signedIdCardXml(), "untrusted"));
+
+		assertEquals(invalid_signature, e.getSOSIFaultCode());
+		assertNull(SOSIContext.getCard());
+	}
+
+	@Test
+	void handleRequestMapsMalformedIdCardToSyntaxError() {
+		String idCardXml = support.signedIdCardXml().replaceAll("<saml:Conditions[^>]*/>|<saml:Conditions.*?</saml:Conditions>", "");
+
+		SOSIException e = assertThrows(SOSIException.class, () -> handleRequest(idCardXml, "no-conditions"));
+
+		assertEquals(syntax_error, e.getSOSIFaultCode());
+	}
+
+	@Test
+	void malformedIdCardIsSkippedWhenCanSkipAndNotProduction() throws Exception {
+		interceptor.setCanSkipSosi(true);
+		interceptor.setProduction(false);
+		String idCardXml = support.signedIdCardXml().replaceAll("<saml:Conditions[^>]*/>|<saml:Conditions.*?</saml:Conditions>", "");
+
+		assertTrue(handleRequest(idCardXml, "no-conditions"));
+	}
+
+	@Test
+	void afterPropertiesSetBuildsOcesFederationByDefault() throws Exception {
+		SOSISecurityInterceptor interceptor = new SOSISecurityInterceptor();
+		interceptor.afterPropertiesSet();
+		assertInstanceOf(SOSIFederation.class, interceptor.getFederation());
+	}
+
+	@Test
+	void afterPropertiesSetBuildsTestFederationWhenNotProduction() throws Exception {
+		SOSISecurityInterceptor interceptor = new SOSISecurityInterceptor();
+		interceptor.setProduction(false);
+		interceptor.afterPropertiesSet();
+		assertInstanceOf(SOSITestFederation.class, interceptor.getFederation());
+	}
+
+	@Test
+	void afterPropertiesSetKeepsInjectedFederation() throws Exception {
+		Federation injected = support.trustedFederation();
+		SOSISecurityInterceptor interceptor = new SOSISecurityInterceptor();
+		interceptor.setFederation(injected);
+		interceptor.afterPropertiesSet();
+		assertSame(injected, interceptor.getFederation());
+	}
+
+	@Test
+	void handleRequestFailsClosedWithoutFederation() {
+		assertThrows(IllegalStateException.class, () -> new SOSISecurityInterceptor().handleRequest(support.requestContext(support.emptySoapEnvelope()), "endpoint"));
 	}
 
 	@Test

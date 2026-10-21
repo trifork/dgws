@@ -21,6 +21,8 @@ import dk.sosi.seal.model.SystemIDCard;
 import dk.sosi.seal.model.UserIDCard;
 import dk.sosi.seal.model.UserInfo;
 import dk.sosi.seal.model.constants.SubjectIdentifierTypeValues;
+import dk.sosi.seal.pki.Federation;
+import dk.sosi.seal.pki.DistinguishedName;
 import dk.sosi.seal.pki.SignatureProviderFactory;
 import dk.sosi.seal.vault.CredentialPair;
 import dk.sosi.seal.vault.CredentialVault;
@@ -50,6 +52,28 @@ final class SOSITestSupport {
 		sosiFactory = new SOSIFactory(new TestCredentialVault(), System.getProperties());
 		messageFactory = new SaajSoapMessageFactory();
 		messageFactory.afterPropertiesSet();
+	}
+
+	Federation trustedFederation() {
+		return federation(sosiFactory.getCredentialVault().getSystemCredentialPair().getCertificate());
+	}
+
+	Federation untrustedFederation() throws Exception {
+		return federation(new TestCredentialVault().getSystemCredentialPair().getCertificate());
+	}
+
+	private Federation federation(X509Certificate trustedSts) {
+		return new Federation(new java.util.Properties(), null) {
+			@Override
+			public boolean isValidSTSCertificate(X509Certificate certificate) {
+				return trustedSts.equals(certificate);
+			}
+
+			@Override
+			protected boolean subjectDistinguishedNameMatches(DistinguishedName subjectDistinguishedName) {
+				return false;
+			}
+		};
 	}
 
 	SaajSoapMessageFactory messageFactory() {

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 
 import javax.xml.namespace.QName;
@@ -23,12 +24,14 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 
 import dk.sosi.seal.model.IDCard;
-import dk.sosi.seal.model.ModelException;
 import dk.sosi.seal.model.SystemIDCard;
 import dk.sosi.seal.model.UserIDCard;
 import dk.sosi.seal.model.UserInfo;
 import dk.sosi.seal.model.constants.NameSpaces;
-import dk.sosi.seal.modelbuilders.ModelBuildException;
+import dk.nsp.seal.security.SignAndValidate;
+import dk.sosi.seal.pki.Federation;
+import dk.sosi.seal.pki.SOSIFederation;
+import dk.sosi.seal.pki.SOSITestFederation;
 import dk.sosi.seal.xml.XmlUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,10 +77,15 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 	private static final Logger logger = LogManager.getLogger(SOSISecurityInterceptor.class);
 	private List<String> skipMethods = new ArrayList<String>();
 	private boolean canSkip = false;
+	private Federation federation;
 
 	public boolean handleRequest(MessageContext ctx, Object endpoint) throws Exception {
 		SOSIContext.setCard(null);
 		SOSIContext.setMessageId(null);
+
+		if (federation == null) {
+			throw new IllegalStateException("federation is required to verify that IDCards are signed by a trusted STS");
+		}
 
 		XPathContext xPathContext = headerContext(ctx);
 		Element samlAssertion = xPathContext.findElement(IDCARD_XPATH);
@@ -118,7 +126,7 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		IDCard idCard;
 		try {
 			idCard = IDCard.from(samlAssertion);
-		} catch (ModelBuildException | ModelException e) {
+		} catch (RuntimeException e) {
 			throw new SOSIException(syntax_error, e);
 		}
 
@@ -127,8 +135,8 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		}
 
 		try {
-			idCard.validateSignature();
-		} catch (ModelException e) {
+			idCard.validateSignatureAndTrust(federation);
+		} catch (RuntimeException e) {
 			throw new SOSIException(invalid_signature, e);
 		}
 		return idCard;
@@ -261,7 +269,19 @@ public class SOSISecurityInterceptor implements EndpointInterceptor, Initializin
 		return request.getRemoteAddr();
 	}
 
+	public void setFederation(Federation federation) {
+		this.federation = federation;
+	}
+
+	public Federation getFederation() {
+		return federation;
+	}
+
 	public void afterPropertiesSet() throws Exception {
+		if (federation == null) {
+			Properties props = SignAndValidate.setupCryptoProviderForJVM();
+			federation = isProduction ? new SOSIFederation(props) : new SOSITestFederation(props);
+		}
 	}
 
 	public void afterCompletion(MessageContext messageContext, Object endpoint, Exception ex) throws Exception {
