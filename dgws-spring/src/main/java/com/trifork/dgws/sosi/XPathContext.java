@@ -10,11 +10,10 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import dk.sosi.seal.model.constants.NameSpaces;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-
-import com.trifork.unsealed.NsPrefixes;
 
 public class XPathContext {
 
@@ -44,7 +43,7 @@ public class XPathContext {
             public String getNamespaceURI(String prefix) {
                 String namespaceUri = prefixMap.get(prefix);
                 if (namespaceUri == null) {
-                    namespaceUri = NsPrefixes.valueOf(prefix).namespaceUri;
+                    namespaceUri = NameSpaces.SOSI_NAMESPACES.get(prefix);
                 }
                 if (namespaceUri == null) {
                     throw new IllegalArgumentException("Unexpected prefix \"" + prefix + "\"");
